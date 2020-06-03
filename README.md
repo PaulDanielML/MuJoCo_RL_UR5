@@ -5,9 +5,9 @@
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
 This repository provides a python class for control of the UR5 robot arm in MuJoCo. 
-The robot configuration used in this setup (Universal Robots UR5 + Robotiq S Model 3 Finger Gripper) is based on [this](http://www.mujoco.org/forum/index.php?resources/universal-robots-ur5-robotiq-s-model-3-finger-gripper.22/) resource.
-The python bindings used come from [mujoco_py](https://github.com/openai/mujoco-py/tree/master/mujoco_py).
-The PID controllers implemented are based on [simple_pid](https://github.com/m-lundberg/simple-pid).
+The robot configuration used in this setup (Universal Robots UR5 + Robotiq S Model 3 Finger Gripper) is based on [this](http://www.mujoco.org/forum/index.php?resources/universal-robots-ur5-robotiq-s-model-3-finger-gripper.22/) resource.  
+The python bindings used come from [mujoco_py](https://github.com/openai/mujoco-py/tree/master/mujoco_py).  
+The PID controllers implemented are based on [simple_pid](https://github.com/m-lundberg/simple-pid).  
 A simple inverse kinematics solver for translating end-effector positions into joint angles has been implemented using [ikpy](https://github.com/Phylliade/ikpy).
 
 The required modules can be installed either manually or using the provided requirements.txt - file. 
@@ -28,4 +28,4 @@ This will install all required packages using pip. The first time you run a scri
 This is all the setup required to use this repo.
 
 
-![img1](https://github.com/PaulDanielML/MuJoCo_RL_UR5/tree/master/media/pic_1.png "UR5 MuJoCo Setup")
+![img1](/media/pic_1.png "UR5 MuJoCo Setup")
