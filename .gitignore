@@ -2,3 +2,4 @@
 *.sublime-workspace
 MUJOCO_LOG.TXT
 tester.py
+/__pycache__

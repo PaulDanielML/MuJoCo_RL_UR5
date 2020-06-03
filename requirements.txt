@@ -4,3 +4,4 @@ simple_pid
 termcolor
 ikpy
 pyquaternion
+cv2

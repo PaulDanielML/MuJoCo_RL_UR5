@@ -105,6 +105,7 @@ Control Engineering / Automation Engineering
         <light name="light3" mode="targetbody" target="box_link" directional="true" pos="1 1 3" />
         <!--Camera parameters-->
         <camera name="main1" mode="fixed" target="gripperpalm" pos="2 2 2.7" axisangle="2 2 -2 1"/>
+        <camera name="top_down" mode="fixed" target="gripperpalm" pos="0 -0.6 2.0" axisangle="2 2 2 0"/>
         <!--Floor Property-->
         <geom name='floor' material="floor_mat" pos='0 0 0' size='2.5 2.5 0.1'  type='plane' />
 
