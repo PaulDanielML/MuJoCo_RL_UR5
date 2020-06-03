@@ -28,4 +28,4 @@ This will install all required packages using pip. The first time you run a scri
 This is all the setup required to use this repo.
 
 
-![img1](/media/pic_1.png "UR5 MuJoCo Setup")
+![gif1](/media/gif_1.gif "Simple Grasp and Toss")
