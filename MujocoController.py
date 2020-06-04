@@ -30,7 +30,7 @@ class MJ_Controller(object):
         self.current_output = np.zeros(len(self.sim.data.ctrl))
         self.image_counter = 0
         self.ee_chain = ikpy.chain.Chain.from_urdf_file('UR5+gripper/ur5_gripper.urdf')
-        self.move_group_to_joint_target(plot=True, group='Arm')
+        self.move_group_to_joint_target()
 
 
 
@@ -376,7 +376,7 @@ class MJ_Controller(object):
         Holds the current position by actuating the joints towards their current target position.
 
         Args:
-            duration: time in ms to hold the position.
+            duration: Time in ms to hold the position.
         """
 
         print('Holding position!')
@@ -390,12 +390,28 @@ class MJ_Controller(object):
 
 
     def fill_plot_list(self, group, step):
+        """
+        Creates a two dimensional list of joint angles for plotting.
+
+        Args:
+            group: The group involved in the movement.
+            step: The step of the trajectory the values correspond to.
+        """
+
         for i in self.groups[group]:
             self.plot_list[self.actuators[i][3]].append(self.sim.data.qpos[self.actuated_joint_ids][i])
         self.plot_list['Steps'].append(step)
 
 
     def create_joint_angle_plot(self, group):
+        """
+        Saves the recorded joint values as a .png-file. The values for each joint of the group are
+        put in a seperate subplot.
+
+        Args:
+            group: The group the stored values belong to. 
+        """
+        
         self.image_counter += 1
         keys = list(self.plot_list.keys())
         number_subplots = len(self.plot_list) - 1

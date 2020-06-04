@@ -1,4 +1,5 @@
 
+
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
 ## Work in progress! Code cleanup, more functionality and RL parts coming soon!
@@ -32,10 +33,12 @@ Example usage of some of the class methods is demonstrated in the file *example.
 
 The class *Mujoco_UR5_controller* offers high and low level methods for controlling the robot in MuJoCo. 
 
+* **move_ee** : High level, moves the endeffector of the arm to the desired XYZ position (in world 					coordinates). This is done using very simple inverse kinematics, just obeying the joint limits. Currently there is not collision avoidance implemented. Since this whole repo is created with grasping in mind, the delivered pose will always be so that the gripper is oriented in a vertical way (for top down grasps).
+* **actuate_joint_group** :  Low level, lets the user specify motor activations for a specified group
+* **grasp** : Uses the specified gripper group to attempt a grasp. A simple check is done to determine weather the grasp was successful or not and the result will be output blinking in the console. 
+
 ![gif1](/media/gif_1.gif "Simple Grasp and Toss")
-<!-- <img src="/media/gif_1.gif" width="800">   -->
 
 **New feature:** The methods *move_ee* and *move_group_to_joint_target* now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine overshoot etc. and if necessary adjust the controller gains.  
 
 ![plot1](/media/plot_1.png "Example plot")
-<!-- <img src="/media/plot_1.png" width="800"> -->
