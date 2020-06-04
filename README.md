@@ -12,9 +12,13 @@ The python bindings used come from [mujoco_py](https://github.com/openai/mujoco-
 The PID controllers implemented are based on [simple_pid](https://github.com/m-lundberg/simple-pid).  
 A simple inverse kinematics solver for translating end-effector positions into joint angles has been implemented using [ikpy](https://github.com/Phylliade/ikpy).
 
-The required modules can be installed either manually or using the provided requirements.txt - file. 
+The required modules can be installed either manually or using the provided requirements.txt - file.
 
-First clone this repo: 
+## **Setup**
+
+Download and install MuJoCo from [here](https://www.roboti.us/index.html). Set up a license and activate it [here](https://www.roboti.us/license.html).
+
+Then clone this repo: 
 ```
 git clone https://github.com/PaulDanielML/MuJoCo_RL_UR5.git
 ```
@@ -29,6 +33,10 @@ pip install -r requirements.txt
 This will install all required packages using pip. The first time you run a script that uses the *Mujoco_UR5_controller* class some more setup might happen, which can take a few moments.
 This is all the setup required to use this repo.  
 
+![gif1](/media/gif_1.gif "Simple Grasp and Toss")
+
+## **Usage**
+
 Example usage of some of the class methods is demonstrated in the file *example.py*.
 
 The class *Mujoco_UR5_controller* offers high and low level methods for controlling the robot in MuJoCo. 
@@ -37,8 +45,8 @@ The class *Mujoco_UR5_controller* offers high and low level methods for controll
 * **actuate_joint_group** :  Low level, lets the user specify motor activations for a specified group
 * **grasp** : Uses the specified gripper group to attempt a grasp. A simple check is done to determine weather the grasp was successful or not and the result will be output blinking in the console. 
 
-![gif1](/media/gif_1.gif "Simple Grasp and Toss")
+## **Updates**
 
-**New feature:** The methods *move_ee* and *move_group_to_joint_target* now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine overshoot etc. and if necessary adjust the controller gains.  
+**New feature:** The methods *move_ee* and *move_group_to_joint_target* now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine which joints overshoot, oscillate etc. and adjust the controller gains based on that.  
 
 ![plot1](/media/plot_1.png "Example plot")

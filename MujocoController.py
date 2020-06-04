@@ -103,12 +103,12 @@ class MJ_Controller(object):
         """
 
         self.controller_list = []
-        self.controller_list.append(PID(10, 0.3, 0.05, setpoint=0.8, output_limits=(-2, 2))) # Shoulder Pan Joint
-        self.controller_list.append(PID(5, 0.1, 0.05, setpoint=-1.57, output_limits=(-2, 2))) # Shoulder Lift Joint
-        self.controller_list.append(PID(5, 2.0, 0.05, setpoint=1.57, output_limits=(-2, 2))) # Elbow Joint
-        self.controller_list.append(PID(3, 0.5, 0.05, setpoint=-0.8, output_limits=(-1, 1))) # Wrist 1 Joint
-        self.controller_list.append(PID(5, 1.0, 0.5, setpoint=0.5, output_limits=(-1, 1))) # Wrist 2 Joint
-        self.controller_list.append(PID(2, 0.3, 0.05, setpoint=1.0, output_limits=(-1, 1))) # Wrist 3 Joint
+        self.controller_list.append(PID(5, 0.0, 1.1, setpoint=0.8, output_limits=(-2, 2))) # Shoulder Pan Joint
+        self.controller_list.append(PID(15, 0.0, 0.5, setpoint=-1.57, output_limits=(-2, 2))) # Shoulder Lift Joint
+        self.controller_list.append(PID(5, 0.0, 0.5, setpoint=1.57, output_limits=(-2, 2))) # Elbow Joint
+        self.controller_list.append(PID(5, 0.0, 0.5, setpoint=-0.8, output_limits=(-1, 1))) # Wrist 1 Joint
+        self.controller_list.append(PID(5, 0.0, 0.5, setpoint=0.5, output_limits=(-1, 1))) # Wrist 2 Joint
+        self.controller_list.append(PID(5, 0.0, 0.5, setpoint=1.0, output_limits=(-1, 1))) # Wrist 3 Joint
         self.controller_list.append(PID(2, 0.1, 0.05, setpoint=0.2, output_limits=(-0.1, 0.8))) # Finger 1 Joint 1
         self.controller_list.append(PID(2, 0.1, 0.05, setpoint=0.2, output_limits=(-0.1, 0.8))) # Finger 2 Joint 1
         self.controller_list.append(PID(1, 0.1, 0.05, setpoint=0.0, output_limits=(-0.1, 0.8))) # Middle Finger Joint 1
@@ -204,7 +204,7 @@ class MJ_Controller(object):
                 steps += 1
 
             if plot:
-                self.create_joint_angle_plot(group)
+                self.create_joint_angle_plot(group=group, tolerance=tolerance)
 
         except Exception as e:
             print(e)
@@ -382,7 +382,7 @@ class MJ_Controller(object):
         print('Holding position!')
         t = 0
         while t < duration:
-            if t%100 == 0:
+            if t%10 == 0:
                 self.move_group_to_joint_target(max_steps=1, plot=False)
             t += 1
             time.sleep(0.001)
@@ -403,15 +403,16 @@ class MJ_Controller(object):
         self.plot_list['Steps'].append(step)
 
 
-    def create_joint_angle_plot(self, group):
+    def create_joint_angle_plot(self, group, tolerance):
         """
         Saves the recorded joint values as a .png-file. The values for each joint of the group are
         put in a seperate subplot.
 
         Args:
             group: The group the stored values belong to. 
+            tolerance: The tolerance value that the joints were required to be in.
         """
-        
+
         self.image_counter += 1
         keys = list(self.plot_list.keys())
         number_subplots = len(self.plot_list) - 1
@@ -431,6 +432,8 @@ class MJ_Controller(object):
             axis.xaxis.set_label_coords(0.05, -0.15)
             axis.yaxis.set_label_coords(1.05, 0.5)
             axis.axhline(self.current_target_joint_values[self.groups[group][i]], color='g', linestyle='--')
+            axis.axhline(self.current_target_joint_values[self.groups[group][i]] + tolerance, color='r', linestyle='--')
+            axis.axhline(self.current_target_joint_values[self.groups[group][i]] - tolerance, color='r', linestyle='--')
 
         filename = 'Joint_values_{}.png'.format(self.image_counter)
         plt.savefig(filename)
