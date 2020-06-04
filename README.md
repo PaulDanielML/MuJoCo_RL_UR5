@@ -32,9 +32,10 @@ Example usage of some of the class methods is demonstrated in the file *example.
 
 The class *Mujoco_UR5_controller* offers high and low level methods for controlling the robot in MuJoCo. 
 
-
-<img src="/media/gif_1.gif" width="800">  
+![gif1](/media/gif_1.gif "Simple Grasp and Toss")
+<!-- <img src="/media/gif_1.gif" width="800">   -->
 
 **New feature:** The methods *move_ee* and *move_group_to_joint_target* now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine overshoot etc. and if necessary adjust the controller gains.  
 
-<img src="/media/plot_1.png" width="800">
+![plot1](/media/plot_1.png "Example plot")
+<!-- <img src="/media/plot_1.png" width="800"> -->
