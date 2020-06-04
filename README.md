@@ -30,6 +30,8 @@ This is all the setup required to use this repo.
 Example usage of some of the class methods is demonstrated in the file *example.py*.
 
 
-![gif1](/media/gif_1.gif "Simple Grasp and Toss")    
+<!-- ![gif1](/media/gif_1.gif "Simple Grasp and Toss")     -->
 
-<img src="/media/plot_1.png" width="400" height="400">
+
+<img src="/media/gif_1.png" width="800">
+<img src="/media/plot_1.png" width="800>
