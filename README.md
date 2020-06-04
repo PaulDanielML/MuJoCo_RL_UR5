@@ -1,3 +1,4 @@
+
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
 ## Work in progress! Code cleanup, more functionality and RL parts coming soon!
@@ -30,8 +31,8 @@ This is all the setup required to use this repo.
 Example usage of some of the class methods is demonstrated in the file *example.py*.
 
 
-<!-- ![gif1](/media/gif_1.gif "Simple Grasp and Toss")     -->
+<img src="/media/gif_1.gif" width="800">  
 
+**New feature:** The methods *move_ee* and *move_group_to_joint_target* now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine overshoot etc. and if necessary adjust the controller gains. 
 
-<img src="/media/gif_1.gif" width="800">
 <img src="/media/plot_1.png" width="800>

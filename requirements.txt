@@ -5,3 +5,4 @@ termcolor
 ikpy
 pyquaternion
 cv2
+matplotlib

@@ -2,7 +2,7 @@
 
 # Author: Paul Daniel (pdd@mp.aau.dk)
 
-import collections
+from collections import defaultdict
 import mujoco_py as mp
 import time
 import numpy as np
@@ -11,6 +11,8 @@ from termcolor import colored
 import ikpy
 from pyquaternion import Quaternion
 import cv2 as cv
+import matplotlib.pyplot as plt
+import traceback
 
 
 class MJ_Controller(object):
@@ -19,20 +21,21 @@ class MJ_Controller(object):
         self.sim = mp.MjSim(self.model)
         self.viewer = mp.MjViewer(self.sim)
         self.create_lists()
-        self.groups = collections.defaultdict(list)
+        self.groups = defaultdict(list)
         self.groups['All'] = [i for i in range(len(self.sim.data.ctrl))]
         self.create_group('Arm', [i for i in range(6)])
         self.create_group('Gripper', [i for i in range(6,10)])
         self.actuated_joint_ids = [i[2] for i in self.actuators]
         self.reached_target = False
         self.current_output = np.zeros(len(self.sim.data.ctrl))
+        self.image_counter = 0
         self.ee_chain = ikpy.chain.Chain.from_urdf_file('UR5+gripper/ur5_gripper.urdf')
-        self.move_group_to_joint_target()
+        self.move_group_to_joint_target(plot=True, group='Arm')
 
 
 
         # rgb, depth = self.sim.render(width=800, height=800, camera_name='top_down', depth=True)
-        # cv.imshow('rbg', rgb)
+        # cv.imshow('rbg', cv.cvtColor(rgb, cv.COLOR_BGR2RGB))
         # cv.imshow('depth', depth)
         # cv.waitKey(delay=10000)
         # cv.destroyAllWindows()
@@ -143,7 +146,7 @@ class MJ_Controller(object):
             print(e)
             print('Could not actuate requested joint group.')
 
-    def move_group_to_joint_target(self, group='All', target=None, tolerance=0.1, max_steps=10000):
+    def move_group_to_joint_target(self, group='All', target=None, tolerance=0.1, max_steps=10000, plot=False):
         """
         Moves the specified joint group to a joint target.
 
@@ -152,6 +155,8 @@ class MJ_Controller(object):
             target: List of target joint values for the group.
             tolerance: Threshold within which the error of each joint must be before the method finishes.
             max_steps: maximum number of steps to actuate before breaking
+            plot: If True, a .png image of the group joint trajectories will be saved to the local directory.
+                  This can be used for PID tuning in case of overshoot etc. The name of the file will be "Joint_angles_" + a number.
         """
         
         try:
@@ -160,6 +165,7 @@ class MJ_Controller(object):
                 assert len(target) == len(self.groups[group]), 'Mismatching target dimensions for group {}!'.format(group)
             ids = self.groups[group]
             steps = 1
+            self.plot_list = defaultdict(list)
             self.reached_target = False
             deltas = np.zeros(len(self.sim.data.ctrl))
 
@@ -182,6 +188,9 @@ class MJ_Controller(object):
                 if steps%1000==0 and target is not None:
                     print('Moving group {} to joint target! Max. delta: {}, Joint: {}'.format(group, max(deltas), self.actuators[np.argmax(deltas)][3]))
 
+                if plot and steps%20==0:
+                    self.fill_plot_list(group, steps)
+
                 if max(deltas) < tolerance:
                     if target is not None:
                         print(colored('Joint values for group {} within requested tolerance! ({} steps)'.format(group, steps), color='green', attrs=['bold']))
@@ -194,8 +203,12 @@ class MJ_Controller(object):
                 self.viewer.render()
                 steps += 1
 
+            if plot:
+                self.create_joint_angle_plot(group)
+
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
             print('Could not move to requested joint target.')
        
 
@@ -214,7 +227,7 @@ class MJ_Controller(object):
         """
 
         print('Closing gripper...')
-        self.move_group_to_joint_target(group='Gripper', target=[0.5, 0.5, 0.5, -0.17], tolerance=0.05, max_steps=1000)
+        self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, max_steps=1000)
         print('Gripper joint positions:')
         print(self.sim.data.qpos[self.actuated_joint_ids][self.groups['Gripper']])
 
@@ -230,17 +243,19 @@ class MJ_Controller(object):
             print(colored('Could not grasp anything!', color='red', attrs=['bold', 'blink']))
 
 
-    def move_ee(self, ee_position):
+    def move_ee(self, ee_position, plot=False):
         """
         Moves the robot arm so that the end effector ends up at the requested XYZ-position,
         with a vertical gripper position.
 
         Args:
             ee_position: List of XYZ-coordinates of the end-effector (ee_link for UR5 setup).
+            plot: If True, a .png image of the arm joint trajectories will be saved to the local directory.
+                  This can be used for PID tuning in case of overshoot etc. The name of the file will be "Joint_angles_" + a number.
         """
         joint_angles = self.ik(ee_position)
         if joint_angles is not None:
-            self.move_group_to_joint_target(group='Arm', target=joint_angles, tolerance=0.05)
+            self.move_group_to_joint_target(group='Arm', target=joint_angles, tolerance=0.05, plot=plot)
         else:
             print('No valid joint angles received, could not move EE to position.')
 
@@ -335,17 +350,25 @@ class MJ_Controller(object):
 
 
     def toss_it_from_the_ellbow(self):
+        """
+        Test method for trying out tossing of grasped objects.
+        """
         for t in range(300):
             self.sim.data.ctrl[2] = -2.0
             self.sim.data.ctrl[0] = -2.0
-            self.step_and_render()
+            self.sim.step()
+            self.viewer.render()
 
             if t > 200:
                 self.sim.data.ctrl[6] = -1.0
                 self.sim.data.ctrl[7] = -1.0
                 self.sim.data.ctrl[8] = -1.0
                 self.sim.data.ctrl[3] = -1.0
-            # time.sleep(0.01)
+
+        self.sim.data.ctrl[:] = 0
+        self.move_group_to_joint_target()
+
+
 
 
     def stay(self, duration):
@@ -359,11 +382,44 @@ class MJ_Controller(object):
         print('Holding position!')
         t = 0
         while t < duration:
-            if t%10 == 0:
-                self.move_group_to_joint_target()
+            if t%100 == 0:
+                self.move_group_to_joint_target(max_steps=1, plot=False)
             t += 1
             time.sleep(0.001)
         print('Moving on...')
+
+
+    def fill_plot_list(self, group, step):
+        for i in self.groups[group]:
+            self.plot_list[self.actuators[i][3]].append(self.sim.data.qpos[self.actuated_joint_ids][i])
+        self.plot_list['Steps'].append(step)
+
+
+    def create_joint_angle_plot(self, group):
+        self.image_counter += 1
+        keys = list(self.plot_list.keys())
+        number_subplots = len(self.plot_list) - 1
+        columns = 3
+        rows = (number_subplots // columns) + (number_subplots % columns)
+
+        position = range(1, number_subplots+1)
+        fig = plt.figure(1, figsize=(15,10))
+        plt.subplots_adjust(hspace=0.4, left=0.05, right=0.95, top=0.95, bottom=0.05)
+
+        for i in range(number_subplots):
+            axis = fig.add_subplot(rows, columns, position[i])
+            axis.plot(self.plot_list['Steps'], self.plot_list[keys[i]])
+            axis.set_title(keys[i])
+            axis.set_xlabel(keys[-1])
+            axis.set_ylabel('Joint angle [rad]')
+            axis.xaxis.set_label_coords(0.05, -0.15)
+            axis.yaxis.set_label_coords(1.05, 0.5)
+            axis.axhline(self.current_target_joint_values[self.groups[group][i]], color='g', linestyle='--')
+
+        filename = 'Joint_values_{}.png'.format(self.image_counter)
+        plt.savefig(filename)
+        print(colored('Saved trajectory to {}.'.format(filename), color='yellow', on_color='on_grey', attrs=['bold']))
+        plt.clf()
 
     
     def utils(self):
