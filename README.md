@@ -33,5 +33,5 @@ Example usage of some of the class methods is demonstrated in the file *example.
 <!-- ![gif1](/media/gif_1.gif "Simple Grasp and Toss")     -->
 
 
-<img src="/media/gif_1.png" width="800">
+<img src="/media/gif_1.gif" width="800">
 <img src="/media/plot_1.png" width="800>
