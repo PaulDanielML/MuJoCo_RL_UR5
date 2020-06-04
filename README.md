@@ -1,6 +1,6 @@
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
-## Work in progress! Code cleanup, refactoring, more functionality and RL parts coming soon!
+## Work in progress! Code cleanup, more functionality and RL parts coming soon!
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
@@ -25,7 +25,11 @@ If desired, activate a virtual environment, then run
 pip install -r requirements.txt
 ```
 This will install all required packages using pip. The first time you run a script that uses the *Mujoco_UR5_controller* class some more setup might happen, which can take a few moments.
-This is all the setup required to use this repo.
+This is all the setup required to use this repo.  
+
+Example usage of some of the class methods is demonstrated in the file *example.py*.
 
 
-![gif1](/media/gif_1.gif "Simple Grasp and Toss")
+![gif1](/media/gif_1.gif "Simple Grasp and Toss")    
+
+<img src="/media/plot_1.png" width="400" height="400">
