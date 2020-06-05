@@ -16,9 +16,14 @@ import traceback
 
 
 class MJ_Controller(object):
+    """
+    Class for control of an robotic arm in MuJoCo.
+    """
+
     def __init__(self):
         self.model = mp.load_model_from_path('UR5+gripper/UR5gripper_v2.xml')
         self.sim = mp.MjSim(self.model)
+        # self.sim = mp.MjSim(self.model, nsubsteps = 20)
         self.viewer = mp.MjViewer(self.sim)
         self.create_lists()
         self.groups = defaultdict(list)
@@ -32,13 +37,6 @@ class MJ_Controller(object):
         self.ee_chain = ikpy.chain.Chain.from_urdf_file('UR5+gripper/ur5_gripper.urdf')
         self.move_group_to_joint_target()
 
-
-
-        # rgb, depth = self.sim.render(width=800, height=800, camera_name='top_down', depth=True)
-        # cv.imshow('rbg', cv.cvtColor(rgb, cv.COLOR_BGR2RGB))
-        # cv.imshow('depth', depth)
-        # cv.waitKey(delay=10000)
-        # cv.destroyAllWindows()
 
     def create_group(self, group_name, idx_list):
         """
@@ -89,10 +87,10 @@ class MJ_Controller(object):
         - controller_list: Contains a controller for each of the actuated joints. This is done so that different gains may be 
         specified for each controller.
 
-        - current_joint_value_targets: Same as the current setpoints for all controllers, created for convenience
+        - current_joint_value_targets: Same as the current setpoints for all controllers, created for convenience.
 
         - current_output = A list containing the ouput values of all the controllers. This list is only initiated here, its 
-        values are overwritten at the first simulation step
+        values are overwritten at the first simulation step.
 
         - actuators: 2D list, each entry represents one actuator and contains:
             0 actuator ID 
@@ -112,7 +110,7 @@ class MJ_Controller(object):
         self.controller_list.append(PID(2, 0.1, 0.05, setpoint=0.2, output_limits=(-0.1, 0.8))) # Finger 1 Joint 1
         self.controller_list.append(PID(2, 0.1, 0.05, setpoint=0.2, output_limits=(-0.1, 0.8))) # Finger 2 Joint 1
         self.controller_list.append(PID(1, 0.1, 0.05, setpoint=0.0, output_limits=(-0.1, 0.8))) # Middle Finger Joint 1
-        self.controller_list.append(PID(1, 0.1, 0.05, setpoint=0.0, output_limits=(-0.8, 0.8))) # Gripperpalm Finger 1 Joint
+        self.controller_list.append(PID(1, 0.1, 0.05, setpoint=-0.1, output_limits=(-0.8, 0.8))) # Gripperpalm Finger 1 Joint
 
         self.current_target_joint_values = []
         for i in range(len(self.sim.data.ctrl)):
@@ -146,7 +144,7 @@ class MJ_Controller(object):
             print(e)
             print('Could not actuate requested joint group.')
 
-    def move_group_to_joint_target(self, group='All', target=None, tolerance=0.1, max_steps=10000, plot=False):
+    def move_group_to_joint_target(self, group='All', target=None, tolerance=0.1, max_steps=10000, plot=False, marker=False):
         """
         Moves the specified joint group to a joint target.
 
@@ -157,6 +155,8 @@ class MJ_Controller(object):
             max_steps: maximum number of steps to actuate before breaking
             plot: If True, a .png image of the group joint trajectories will be saved to the local directory.
                   This can be used for PID tuning in case of overshoot etc. The name of the file will be "Joint_angles_" + a number.
+            marker: If True, a colored visual marker will be added into the scene to visualize the current
+                    cartesian target.
         """
         
         try:
@@ -165,7 +165,8 @@ class MJ_Controller(object):
                 assert len(target) == len(self.groups[group]), 'Mismatching target dimensions for group {}!'.format(group)
             ids = self.groups[group]
             steps = 1
-            self.plot_list = defaultdict(list)
+            if plot:
+                self.plot_list = defaultdict(list)
             self.reached_target = False
             deltas = np.zeros(len(self.sim.data.ctrl))
 
@@ -190,6 +191,9 @@ class MJ_Controller(object):
 
                 if plot and steps%20==0:
                     self.fill_plot_list(group, steps)
+
+                if marker:
+                    self.add_marker(self.current_carthesian_target)
 
                 if max(deltas) < tolerance:
                     if target is not None:
@@ -218,7 +222,7 @@ class MJ_Controller(object):
         """
 
         print('Opening gripper...')
-        self.move_group_to_joint_target(group='Gripper', target=[0.2, 0.2, 0.0, 0.0])
+        self.move_group_to_joint_target(group='Gripper', target=[0.2, 0.2, 0.0, -0.1])
 
 
     def close_gripper(self):
@@ -243,19 +247,21 @@ class MJ_Controller(object):
             print(colored('Could not grasp anything!', color='red', attrs=['bold', 'blink']))
 
 
-    def move_ee(self, ee_position, plot=False):
+    def move_ee(self, ee_position, plot=False, marker=False):
         """
-        Moves the robot arm so that the end effector ends up at the requested XYZ-position,
+        Moves the robot arm so that the gripper center ends up at the requested XYZ-position,
         with a vertical gripper position.
 
         Args:
             ee_position: List of XYZ-coordinates of the end-effector (ee_link for UR5 setup).
             plot: If True, a .png image of the arm joint trajectories will be saved to the local directory.
                   This can be used for PID tuning in case of overshoot etc. The name of the file will be "Joint_angles_" + a number.
+            marker: If True, a colored visual marker will be added into the scene to visualize the current
+                    cartesian target.
         """
         joint_angles = self.ik(ee_position)
         if joint_angles is not None:
-            self.move_group_to_joint_target(group='Arm', target=joint_angles, tolerance=0.05, plot=plot)
+            self.move_group_to_joint_target(group='Arm', target=joint_angles, tolerance=0.05, plot=plot, marker=marker)
         else:
             print('No valid joint angles received, could not move EE to position.')
 
@@ -274,9 +280,14 @@ class MJ_Controller(object):
         """
         try:
             assert len(ee_position) == 3, 'Invalid EE target! Please specify XYZ-coordinates in a list of length 3.'
+            # We want to be able to spedify the ee position in world coordinates, so subtract the position of the
+            # base link. This is because the inverse kinematics solver chain starts at the base link. 
             self.current_carthesian_target = ee_position
             ee_position -= self.sim.data.body_xpos[self.model.body_name2id('base_link')]
-            joint_angles = self.ee_chain.inverse_kinematics(ee_position, [0,0,-1], orientation_mode='X')
+            # By adding the appr. distance between ee_link and grasp center, we can now specify a world target position
+            # for the grasp center instead of the ee_link
+            gripper_center_position = ee_position + [0, -0.01, 0.205]
+            joint_angles = self.ee_chain.inverse_kinematics(gripper_center_position, [0,0,-1], orientation_mode='X')
             joint_angles = joint_angles[1:-1]
 
             return joint_angles
@@ -316,6 +327,13 @@ class MJ_Controller(object):
         print('################################################')
         for i in range(len(self.actuated_joint_ids)):
             print('Current angle for joint {}: {}'.format(self.actuators[i][3], self.sim.data.qpos[self.actuated_joint_ids][i]))
+
+        print('\n################################################')
+        print('CURRENT BODY POSITIONS')
+        print('################################################')
+        for i in range(self.model.nbody):
+            print('Current position for body {}: {}'.format(self.model.body_id2name(i), self.sim.data.body_xpos[i]))
+
 
         print('\n################################################')
         print('CURRENT BODY ROTATION MATRIZES')
@@ -367,8 +385,6 @@ class MJ_Controller(object):
 
         self.sim.data.ctrl[:] = 0
         self.move_group_to_joint_target()
-
-
 
 
     def stay(self, duration):
@@ -429,7 +445,7 @@ class MJ_Controller(object):
             axis.set_title(keys[i])
             axis.set_xlabel(keys[-1])
             axis.set_ylabel('Joint angle [rad]')
-            axis.xaxis.set_label_coords(0.05, -0.15)
+            axis.xaxis.set_label_coords(0.05, -0.1)
             axis.yaxis.set_label_coords(1.05, 0.5)
             axis.axhline(self.current_target_joint_values[self.groups[group][i]], color='g', linestyle='--')
             axis.axhline(self.current_target_joint_values[self.groups[group][i]] + tolerance, color='r', linestyle='--')
@@ -440,6 +456,30 @@ class MJ_Controller(object):
         print(colored('Saved trajectory to {}.'.format(filename), color='yellow', on_color='on_grey', attrs=['bold']))
         plt.clf()
 
-    
-    def utils(self):
-        self.viewer.add_marker(pos=self.current_carthesian_target, label='Target', size=np.ones(3) * 0.05)
+
+    def get_image_data(self, show=False, camera='top_down'):
+        """
+        Returns the RGB and depth images of the provided camera.
+
+        Args:
+            show: If True displays the images for five seconds or until a key is pressed.
+            camera: String specifying the name of the camera to use.
+        """
+
+        rgb, depth = self.sim.render(width=400, height=400, camera_name=camera, depth=True)
+        if show:
+            cv.imshow('rbg', cv.cvtColor(rgb, cv.COLOR_BGR2RGB))
+            cv.imshow('depth', depth)
+            cv.waitKey(delay=5000)
+            cv.destroyAllWindows()
+        return rgb, depth
+
+
+    def add_marker(self, coordinates):
+        """
+        Adds a circular red marker at the coordinates, dislaying the coordinates as a label.
+
+        Args:
+            coordinates: List of XYZ-coordinates in m.
+        """
+        self.viewer.add_marker(pos=coordinates, label=str(coordinates), size=np.ones(3) * 0.015, rgba=[1,0,0,1], type=2)
