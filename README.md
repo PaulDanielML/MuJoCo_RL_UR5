@@ -37,7 +37,7 @@ This is all the setup required to use this repo.
 
 ## **Usage**
 
-Example usage of some of the class methods is demonstrated in the file *example.py*.
+Example usage of some of the class methods is demonstrated in the file [*example.py*](example.py).
 
 The class *Mujoco_UR5_controller* offers high and low level methods for controlling the robot in MuJoCo. 
 
