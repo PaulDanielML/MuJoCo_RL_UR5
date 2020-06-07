@@ -20,11 +20,19 @@ class MJ_Controller(object):
     Class for control of an robotic arm in MuJoCo.
     """
 
-    def __init__(self):
-        self.model = mp.load_model_from_path('UR5+gripper/UR5gripper_v2.xml')
-        self.sim = mp.MjSim(self.model)
-        # self.sim = mp.MjSim(self.model, nsubsteps = 20)
-        self.viewer = mp.MjViewer(self.sim)
+    def __init__(self, model=None, simulation=None, viewer=None):
+        if model==None:
+            self.model = mp.load_model_from_path('UR5+gripper/UR5gripper_v2.xml')
+        else:
+            self.model = model
+        if simulation==None:
+            self.sim = mp.MjSim(self.model)
+        else:
+            self.sim = simulation
+        if viewer==None:
+            self.viewer = mp.MjViewer(self.sim)
+        else:
+            self.viewer = viewer
         self.create_lists()
         self.groups = defaultdict(list)
         self.groups['All'] = [i for i in range(len(self.sim.data.ctrl))]

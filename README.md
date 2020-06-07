@@ -2,7 +2,7 @@
 
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
-## Work in progress! Code cleanup, more functionality and RL parts coming soon!
+## Work in progress! More functionality and RL parts coming soon. Currently implementing gym interface. 
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
