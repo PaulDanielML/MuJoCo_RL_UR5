@@ -48,5 +48,6 @@ The class *Mujoco_UR5_controller* offers high and low level methods for controll
 ## **Updates**
 
 **New feature:** The methods *move_ee* and *move_group_to_joint_target* now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine which joints overshoot, oscillate etc. and adjust the controller gains based on that.  
+The tolerance used for the trajectory are plotted in red, so it can easily be determined how many steps each of the joints needs to reach a value within tolerance. 
 
 ![plot1](/media/plot_1.png "Example plot")
