@@ -1,12 +1,17 @@
 
 
+
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
-## Work in progress! More functionality and RL parts coming soon. Currently implementing gym interface. 
+## Work in progress! More functionality and RL parts coming soon. Currently implementing gym interface.
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
-This repository provides a python class for control of the UR5 robot arm in MuJoCo. 
+This repository provides several python classes for control of robotic arms in MuJoCo: 
+
+ - **MJ_Controller:** This class can be used as a standalone class for basic robot control in MuJoCo. This can be useful for trying out models and their grasping capabilities. 
+ Alternatively, its methods can also be used by any other class (like a Gym-environment) to provide some more functionality. One example of this might be to move the robot back into a certain position after every episode of training, which might be preferable compared to just resetting all the joint angles and velocities. 
+
 The robot configuration used in this setup (Universal Robots UR5 + Robotiq S Model 3 Finger Gripper) is based on [this](http://www.mujoco.org/forum/index.php?resources/universal-robots-ur5-robotiq-s-model-3-finger-gripper.22/) resource.  
 The python bindings used come from [mujoco_py](https://github.com/openai/mujoco-py/tree/master/mujoco_py).  
 The PID controllers implemented are based on [simple_pid](https://github.com/m-lundberg/simple-pid).  
@@ -37,9 +42,11 @@ This is all the setup required to use this repo.
 
 ## **Usage**
 
+### **MJ_Controller - class:**
+
 Example usage of some of the class methods is demonstrated in the file [*example.py*](example.py).
 
-The class *Mujoco_UR5_controller* offers high and low level methods for controlling the robot in MuJoCo. 
+The class *MJ_Controller* offers high and low level methods for controlling the robot in MuJoCo. 
 
 * **move_ee** : High level, moves the endeffector of the arm to the desired XYZ position (in world 					coordinates). This is done using very simple inverse kinematics, just obeying the joint limits. Currently there is not collision avoidance implemented. Since this whole repo is created with grasping in mind, the delivered pose will always be so that the gripper is oriented in a vertical way (for top down grasps).
 * **actuate_joint_group** :  Low level, lets the user specify motor activations for a specified group
@@ -47,7 +54,7 @@ The class *Mujoco_UR5_controller* offers high and low level methods for controll
 
 ## **Updates**
 
-**New feature:** The methods *move_ee* and *move_group_to_joint_target* now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine which joints overshoot, oscillate etc. and adjust the controller gains based on that.  
+**Joint plots:** The methods *move_ee* and *move_group_to_joint_target* now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine which joints overshoot, oscillate etc. and adjust the controller gains based on that.  
 The tolerance used for the trajectory are plotted in red, so it can easily be determined how many steps each of the joints needs to reach a value within tolerance. 
 
 ![plot1](/media/plot_1.png "Example plot")
