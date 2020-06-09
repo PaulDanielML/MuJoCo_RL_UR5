@@ -11,6 +11,7 @@ from gym.envs.mujoco import mujoco_env
 from gym import utils
 from MujocoController import MJ_Controller
 import traceback
+from pathlib import Path
 
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def __init__(self, file='/UR5+gripper/UR5gripper_v2.xml', mode='reacher'):
@@ -19,7 +20,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.task_mode = mode
         self.step_called = 0
         utils.EzPickle.__init__(self)
-        path = os.path.dirname(os.path.abspath(__file__)) + file
+        path = os.path.realpath(__file__)
+        path = str(Path(path).parent.parent.parent) + file
         mujoco_env.MujocoEnv.__init__(self, path, 5)
         # render once to initialize a viewer object
         self.render()
@@ -108,6 +110,11 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         return self.get_observation()
 
 
+    def close(self):
+        mujoco_env.MujocoEnv.close()
+        cv.destroyAllWindows()
+
+
 if __name__ == '__main__':
 
     N_EPISODES = 3  
@@ -122,5 +129,5 @@ if __name__ == '__main__':
             action = env.action_space.sample()
             observation, reward, done, _ = env.step(action)
 
-
-    cv.destroyAllWindows()
+    env.close()
+    # cv.destroyAllWindows()

@@ -2,6 +2,6 @@
 
 import gym
 
-env = gym.make('Grasper-v0')
+env = gym.make('gym_grasper:Grasper-v0')
 
 print('worked.')

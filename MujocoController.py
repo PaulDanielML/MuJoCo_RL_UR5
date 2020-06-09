@@ -42,7 +42,7 @@ class MJ_Controller(object):
         self.current_output = np.zeros(len(self.sim.data.ctrl))
         self.image_counter = 0
         self.ee_chain = ikpy.chain.Chain.from_urdf_file('UR5+gripper/ur5_gripper.urdf')
-        # self.move_group_to_joint_target(plot=True)
+        self.move_group_to_joint_target()
 
 
     def create_group(self, group_name, idx_list):
@@ -497,4 +497,5 @@ class MJ_Controller(object):
         Args:
             coordinates: List of XYZ-coordinates in m.
         """
+        
         self.viewer.add_marker(pos=coordinates, label=str(coordinates), size=np.ones(3) * 0.015, rgba=[1,0,0,1], type=2)
