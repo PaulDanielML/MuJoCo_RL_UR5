@@ -12,7 +12,6 @@ import ikpy
 from pyquaternion import Quaternion
 import cv2 as cv
 import matplotlib.pyplot as plt
-import traceback
 
 
 class MJ_Controller(object):
@@ -43,7 +42,7 @@ class MJ_Controller(object):
         self.current_output = np.zeros(len(self.sim.data.ctrl))
         self.image_counter = 0
         self.ee_chain = ikpy.chain.Chain.from_urdf_file('UR5+gripper/ur5_gripper.urdf')
-        self.move_group_to_joint_target()
+        # self.move_group_to_joint_target(plot=True)
 
 
     def create_group(self, group_name, idx_list):
@@ -71,8 +70,10 @@ class MJ_Controller(object):
     def show_model_info(self):
         """
         Displays relevant model info for the user, namely bodies, joints, actuators, as well as their IDs and ranges.
-        Also gives info on which actuators control which joints and which joints are included in the kinematic chain. 
+        Also gives info on which actuators control which joints and which joints are included in the kinematic chain, 
+        as well as the PID controller info for each actuator.  
         """
+
         print('\nNumber of bodies: {}'.format(self.model.nbody))
         for i in range(self.model.nbody):
             print('Body ID: {}, Body Name: {}'.format(i, self.model.body_id2name(i)))
@@ -86,6 +87,11 @@ class MJ_Controller(object):
             print('Actuator ID: {}, Actuator Name: {}, Controlled Joint: {}, Control Range: {}'.format(i, self.model.actuator_id2name(i), self.actuators[i][3], self.model.actuator_ctrlrange[i]))
 
         print('\nJoints in kinematic chain: {}'.format([i.name for i in self.ee_chain.links]))
+
+        print('\nPID Info: \n')
+        for i in range(len(self.actuators)):
+            print('{}: P: {}, I: {}, D: {}, setpoint: {}, sample_time: {}'.format(self.actuators[i][3], self.actuators[i][4].tunings[0], self.actuators[i][4].tunings[1], 
+                                                                            self.actuators[i][4].tunings[2], self.actuators[i][4].setpoint, self.actuators[i][4].sample_time))
 
     def create_lists(self):
         """
@@ -109,16 +115,17 @@ class MJ_Controller(object):
         """
 
         self.controller_list = []
-        self.controller_list.append(PID(5, 0.0, 1.1, setpoint=0.8, output_limits=(-2, 2))) # Shoulder Pan Joint
-        self.controller_list.append(PID(15, 0.0, 0.5, setpoint=-1.57, output_limits=(-2, 2))) # Shoulder Lift Joint
-        self.controller_list.append(PID(5, 0.0, 0.5, setpoint=1.57, output_limits=(-2, 2))) # Elbow Joint
-        self.controller_list.append(PID(5, 0.0, 0.5, setpoint=-0.8, output_limits=(-1, 1))) # Wrist 1 Joint
-        self.controller_list.append(PID(5, 0.0, 0.5, setpoint=0.5, output_limits=(-1, 1))) # Wrist 2 Joint
-        self.controller_list.append(PID(5, 0.0, 0.5, setpoint=1.0, output_limits=(-1, 1))) # Wrist 3 Joint
-        self.controller_list.append(PID(2, 0.1, 0.05, setpoint=0.2, output_limits=(-0.1, 0.8))) # Finger 1 Joint 1
-        self.controller_list.append(PID(2, 0.1, 0.05, setpoint=0.2, output_limits=(-0.1, 0.8))) # Finger 2 Joint 1
-        self.controller_list.append(PID(1, 0.1, 0.05, setpoint=0.0, output_limits=(-0.1, 0.8))) # Middle Finger Joint 1
-        self.controller_list.append(PID(1, 0.1, 0.05, setpoint=-0.1, output_limits=(-0.8, 0.8))) # Gripperpalm Finger 1 Joint
+        sample_time = 0.05
+        self.controller_list.append(PID(5, 0.0, 1.1, setpoint=-1.57, output_limits=(-2, 2), sample_time=sample_time)) # Shoulder Pan Joint
+        self.controller_list.append(PID(15, 0.0, 0.5, setpoint=-1.57, output_limits=(-2, 2), sample_time=sample_time)) # Shoulder Lift Joint
+        self.controller_list.append(PID(5, 0.0, 0.5, setpoint=1.57, output_limits=(-2, 2), sample_time=sample_time)) # Elbow Joint
+        self.controller_list.append(PID(5, 0.0, 0.1, setpoint=-0.8, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 1 Joint
+        self.controller_list.append(PID(5, 0.0, 0.1, setpoint=0.5, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 2 Joint
+        self.controller_list.append(PID(5, 0.0, 0.1, setpoint=1.0, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 3 Joint
+        self.controller_list.append(PID(2, 0.1, 0.05, setpoint=0.2, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Finger 1 Joint 1
+        self.controller_list.append(PID(2, 0.1, 0.05, setpoint=0.2, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Finger 2 Joint 1
+        self.controller_list.append(PID(1, 0.1, 0.05, setpoint=0.0, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Middle Finger Joint 1
+        self.controller_list.append(PID(1, 0.1, 0.05, setpoint=-0.1, output_limits=(-0.8, 0.8), sample_time=sample_time)) # Gripperpalm Finger 1 Joint
 
         self.current_target_joint_values = []
         for i in range(len(self.sim.data.ctrl)):
@@ -146,7 +153,6 @@ class MJ_Controller(object):
             assert len(motor_values) == len(self.groups[group]), 'Invalid number of actuator values!'
             for i,v in enumerate(self.groups[group]):
                 self.sim.data.ctrl[v] = motor_values[i]
-            print(self.sim.data.ctrl)
 
         except Exception as e:
             print(e)
@@ -220,7 +226,6 @@ class MJ_Controller(object):
 
         except Exception as e:
             print(e)
-            print(traceback.format_exc())
             print('Could not move to requested joint target.')
        
 
@@ -465,7 +470,7 @@ class MJ_Controller(object):
         plt.clf()
 
 
-    def get_image_data(self, show=False, camera='top_down'):
+    def get_image_data(self, show=False, camera='top_down', width=200, height=200):
         """
         Returns the RGB and depth images of the provided camera.
 
@@ -474,13 +479,15 @@ class MJ_Controller(object):
             camera: String specifying the name of the camera to use.
         """
 
-        rgb, depth = self.sim.render(width=400, height=400, camera_name=camera, depth=True)
+        rgb, depth = self.sim.render(width=width, height=height, camera_name=camera, depth=True)
         if show:
             cv.imshow('rbg', cv.cvtColor(rgb, cv.COLOR_BGR2RGB))
-            cv.imshow('depth', depth)
-            cv.waitKey(delay=5000)
-            cv.destroyAllWindows()
-        return rgb, depth
+            # cv.imshow('depth', depth)
+            cv.waitKey(1)
+            # cv.waitKey(delay=5000)
+            # cv.destroyAllWindows()
+
+        return (rgb, depth)
 
 
     def add_marker(self, coordinates):
