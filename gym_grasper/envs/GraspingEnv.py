@@ -15,7 +15,7 @@ import traceback
 from pathlib import Path
 
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
-    def __init__(self, file='/UR5+gripper/UR5gripper_v2.xml', mode='reacher'):
+    def __init__(self, file='/UR5+gripper/UR5gripper_reacher.xml', mode='reacher'):
         self.initialized = False
         self.IMAGE_SIZE = 500
         self.task_mode = mode
@@ -27,7 +27,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         mujoco_env.MujocoEnv.__init__(self, full_path, 5)
         # render once to initialize a viewer object
         self.render()
-        self.controller = MJ_Controller(self.model, self.sim, self.viewer, path=path)
+        self.controller = MJ_Controller(self.model, self.sim, self.viewer)
         self.initialized = True
 
 
@@ -55,17 +55,22 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             # Therefore we simply return an array of zeros of the appropriate size. 
             if not self.initialized:
                 observation = np.zeros((self.IMAGE_SIZE, self.IMAGE_SIZE))
+                reward = 0
             else:
                 observation = self.get_observation()
 
             # Implementing reacher task as a first tryout.
-            if self.task_mode == 'reacher':
-                vec = self.get_body_com("gripperfinger_middle_link_3")-self.get_body_com("pick_box_1")
+            if self.task_mode == 'reacher' and self.initialized:
+                vec = self.get_body_com("gripperfinger_middle_link_3")-self.get_body_com("target")
                 # minimize distance
                 reward_dist = - np.linalg.norm(vec)
                 # minimize actuator activations
                 reward_ctrl = - np.square(action).sum()
                 reward = reward_dist + reward_ctrl
+
+                # if self.step_called%100==0:
+                #     print('Distance to target: ', np.linalg.norm(vec))
+                #     print('reward: ', reward)
 
 
             done = False
@@ -99,15 +104,21 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         Gets called in the parent classes reset method.
         """
 
-        # Use the controller to move back to a starting position. In this case just use the default initial controller setpoints.
-        self.controller.move_group_to_joint_target()
+        if self.task_mode == 'reacher':
+            target_values = []
+            target_values.append(np.random.uniform(low=-0.2, high=0.2))
+            target_values.append(np.random.uniform(low=-0.2, high=0.05))
+            target_values.append(np.random.uniform(low=-0.15, high=0.15))
+            qpos = self.data.qpos
+            qvel = self.data.qvel
+            qpos[-3:] = target_values
+            self.set_state(qpos, qvel)
 
-        # if self.task_mode == 'reacher':
-        #     box_x = np.random.uniform(low=-0.25, high=0.25)
-        #     box_y = np.random.uniform(low=-0.15, high=0.15)
-        #     coordinates = [box_x, box_y]
+        # Use the controller to move back to a starting position. In this case just use the default initial controller setpoints.
+        self.controller.move_group_to_joint_target(group='Arm')
 
         # return an observation image
+        # TODO: include depth data in observation
         return self.get_observation()
 
 

@@ -3,6 +3,8 @@
 # Author: Paul Daniel (pdd@mp.aau.dk)
 
 from collections import defaultdict
+import os
+from pathlib import Path
 import mujoco_py as mp
 import time
 import numpy as np
@@ -17,12 +19,16 @@ import matplotlib.pyplot as plt
 class MJ_Controller(object):
     """
     Class for control of an robotic arm in MuJoCo.
+    It can be used on its own, in which case a new model, simulation and viewer will be created. 
+    It can also be passed these objects when creating an instance, in which case the class can be used
+    to perform tasks on an already instantiated simulation.
     """
 
-    def __init__(self, model=None, simulation=None, viewer=None, path='UR5+gripper/'):
-        print(path)
+    def __init__(self, model=None, simulation=None, viewer=None):
+        path = os.path.realpath(__file__)
+        path = str(Path(path).parent.parent.parent)
         if model==None:
-            self.model = mp.load_model_from_path(path + '/UR5+gripper/UR5gripper_v2.xml')
+            self.model = mp.load_model_from_path(path + '/UR5+gripper/UR5gripper_reacher.xml')
         else:
             self.model = model
         if simulation==None:
@@ -43,7 +49,7 @@ class MJ_Controller(object):
         self.current_output = np.zeros(len(self.sim.data.ctrl))
         self.image_counter = 0
         self.ee_chain = ikpy.chain.Chain.from_urdf_file(path + '/UR5+gripper/ur5_gripper.urdf')
-        self.move_group_to_joint_target()
+        # self.move_group_to_joint_target()
 
 
     def create_group(self, group_name, idx_list):
@@ -337,10 +343,16 @@ class MJ_Controller(object):
         """
 
         print('\n################################################')
-        print('CURRENT JOINT POSITIONS')
+        print('CURRENT JOINT POSITIONS (ACTUATED)')
         print('################################################')
         for i in range(len(self.actuated_joint_ids)):
             print('Current angle for joint {}: {}'.format(self.actuators[i][3], self.sim.data.qpos[self.actuated_joint_ids][i]))
+
+        print('\n################################################')
+        print('CURRENT JOINT POSITIONS (ALL)')
+        print('################################################')
+        for i in range(self.model.njnt):
+            print('Current angle for joint {}: {}'.format(self.model.joint_id2name(i), self.sim.data.qpos[i]))
 
         print('\n################################################')
         print('CURRENT BODY POSITIONS')

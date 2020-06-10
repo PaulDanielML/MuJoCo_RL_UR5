@@ -4,8 +4,8 @@ import gym
 
 env = gym.make('gym_grasper:Grasper-v0')
 
-N_EPISODES = 3  
-N_STEPS = 200
+N_EPISODES = 10  
+N_STEPS = 2000
 
 
 for episode in range(1, N_EPISODES+1):
@@ -17,4 +17,4 @@ for episode in range(1, N_EPISODES+1):
 
 env.close()
 
-print('worked.')
+print('Finished.')
