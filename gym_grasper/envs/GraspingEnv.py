@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 # Author: Paul Daniel (pdd@mp.aau.dk)
-
+import sys
+sys.path.insert(0, '..')
 import os
 import time
 import  cv2 as cv
@@ -9,7 +10,7 @@ import numpy as np
 import mujoco_py
 from gym.envs.mujoco import mujoco_env
 from gym import utils
-from MujocoController import MJ_Controller
+from gym_grasper.controller.MujocoController import MJ_Controller
 import traceback
 from pathlib import Path
 
@@ -21,11 +22,12 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.step_called = 0
         utils.EzPickle.__init__(self)
         path = os.path.realpath(__file__)
-        path = str(Path(path).parent.parent.parent) + file
-        mujoco_env.MujocoEnv.__init__(self, path, 5)
+        path = str(Path(path).parent.parent.parent)
+        full_path = path + file
+        mujoco_env.MujocoEnv.__init__(self, full_path, 5)
         # render once to initialize a viewer object
         self.render()
-        self.controller = MJ_Controller(self.model, self.sim, self.viewer)
+        self.controller = MJ_Controller(self.model, self.sim, self.viewer, path=path)
         self.initialized = True
 
 
@@ -86,6 +88,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         Args:
             show: If True, displays the observation in an cv2 window.
         """
+
         rgb, depth = self.controller.get_image_data(width=self.IMAGE_SIZE, height=self.IMAGE_SIZE, show=show)
         return rgb
 
@@ -104,30 +107,10 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         #     box_y = np.random.uniform(low=-0.15, high=0.15)
         #     coordinates = [box_x, box_y]
 
-
-
         # return an observation image
         return self.get_observation()
 
 
     def close(self):
-        mujoco_env.MujocoEnv.close()
+        mujoco_env.MujocoEnv.close(self)
         cv.destroyAllWindows()
-
-
-if __name__ == '__main__':
-
-    N_EPISODES = 3  
-    N_STEPS = 200
-    env = GraspEnv()
-
-
-    for episode in range(1, N_EPISODES+1):
-        obs = env.reset()
-        print('Starting episode {}!'.format(episode))
-        for steps in range(N_STEPS):
-            action = env.action_space.sample()
-            observation, reward, done, _ = env.step(action)
-
-    env.close()
-    # cv.destroyAllWindows()
