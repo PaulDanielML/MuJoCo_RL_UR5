@@ -1,16 +1,16 @@
-
-
-
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
-## Work in progress! More functionality and RL parts coming soon. Currently implementing gym interface.
+## Work in progress! Current gym environment contains a reacher task,  with rgb camera images as observations.
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
 This repository provides several python classes for control of robotic arms in MuJoCo: 
 
  - **MJ_Controller:** This class can be used as a standalone class for basic robot control in MuJoCo. This can be useful for trying out models and their grasping capabilities. 
- Alternatively, its methods can also be used by any other class (like a Gym-environment) to provide some more functionality. One example of this might be to move the robot back into a certain position after every episode of training, which might be preferable compared to just resetting all the joint angles and velocities. 
+ Alternatively, its methods can also be used by any other class (like a Gym environment) to provide some more functionality. One example of this might be to move the robot back into a certain position after every episode of training, which might be preferable compared to just resetting all the joint angles and velocities. 
+
+- **GraspEnv:** A Gym environment for training reinforcement learning agents. The currently implemented task is a simple reacher task. This will be extended or replaced by a grasping task. 
+The difference to most other MuJoCo Gym environments is that the observation returned is a camera image instead of a state vector of the simulation. This is meant to resemble a real world setup more closely. 
 
 The robot configuration used in this setup (Universal Robots UR5 + Robotiq S Model 3 Finger Gripper) is based on [this](http://www.mujoco.org/forum/index.php?resources/universal-robots-ur5-robotiq-s-model-3-finger-gripper.22/) resource.  
 The python bindings used come from [mujoco_py](https://github.com/openai/mujoco-py/tree/master/mujoco_py).  
@@ -41,6 +41,12 @@ This is all the setup required to use this repo.
 ![gif1](/media/gif_1.gif "Simple Grasp and Toss")
 
 ## **Usage**
+
+### **GraspEnv - class:**
+
+The file [*example_agent.py*](example_agent.py) demonstrates the use of a random agent for this environment.
+The created environment has an associated controller object, which provides all the functionality of the *MJ_Controller* - class to it. 
+
 
 ### **MJ_Controller - class:**
 
