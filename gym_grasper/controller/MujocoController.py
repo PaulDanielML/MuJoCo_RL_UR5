@@ -14,6 +14,7 @@ import ikpy
 from pyquaternion import Quaternion
 import cv2 as cv
 import matplotlib.pyplot as plt
+import copy 
 
 
 class MJ_Controller(object):
@@ -99,6 +100,12 @@ class MJ_Controller(object):
         for i in range(len(self.actuators)):
             print('{}: P: {}, I: {}, D: {}, setpoint: {}, sample_time: {}'.format(self.actuators[i][3], self.actuators[i][4].tunings[0], self.actuators[i][4].tunings[1], 
                                                                             self.actuators[i][4].tunings[2], self.actuators[i][4].setpoint, self.actuators[i][4].sample_time))
+
+        print('\n Camera Info: \n')
+        for i in range(self.model.ncam):
+            print('Camera ID: {}, Camera Name: {}, Camera FOV (y, degrees): {}, Position: {}, Orientation: {}'.format(i, self.model.camera_id2name(i), 
+                                                                                    self.model.cam_fovy[i], self.model.cam_pos0[i], self.model.cam_mat0[i]))
+
 
     def create_lists(self):
         """
@@ -298,6 +305,7 @@ class MJ_Controller(object):
         Returns:
             joint_angles: List of joint angles that will achieve the desired ee position. 
         """
+        
         try:
             assert len(ee_position) == 3, 'Invalid EE target! Please specify XYZ-coordinates in a list of length 3.'
             # We want to be able to spedify the ee position in world coordinates, so subtract the position of the
@@ -492,7 +500,7 @@ class MJ_Controller(object):
             camera: String specifying the name of the camera to use.
         """
 
-        rgb, depth = self.sim.render(width=width, height=height, camera_name=camera, depth=True)
+        rgb, depth = copy.deepcopy(self.sim.render(width=width, height=height, camera_name=camera, depth=True))
         if show:
             cv.imshow('rbg', cv.cvtColor(rgb, cv.COLOR_BGR2RGB))
             # cv.imshow('depth', depth)

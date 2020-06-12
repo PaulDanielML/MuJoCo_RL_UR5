@@ -17,18 +17,20 @@ from pathlib import Path
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def __init__(self, file='/UR5+gripper/UR5gripper_reacher.xml', mode='reacher'):
         self.initialized = False
-        self.IMAGE_SIZE = 500
+        self.IMAGE_WIDTH = 500
+        self.IMAGE_HEIGHT = 500
         self.task_mode = mode
         self.step_called = 0
         utils.EzPickle.__init__(self)
         path = os.path.realpath(__file__)
         path = str(Path(path).parent.parent.parent)
         full_path = path + file
-        mujoco_env.MujocoEnv.__init__(self, full_path, 5)
+        mujoco_env.MujocoEnv.__init__(self, full_path, 2)
         # render once to initialize a viewer object
         self.render()
         self.controller = MJ_Controller(self.model, self.sim, self.viewer)
         self.initialized = True
+       
 
 
     def step(self, action):
@@ -49,12 +51,13 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         try:
             assert len(action) == self.action_space.shape[0], 'Wrong action dimensions, should be an array of size {}'.format(self.action_space.shape[0])
+            # self.do_simulation(action, 1)
             self.do_simulation(action, self.frame_skip)
 
             # Parent class will step once during init to set up the observation space, controller is not yet available at that time.
             # Therefore we simply return an array of zeros of the appropriate size. 
             if not self.initialized:
-                observation = np.zeros((self.IMAGE_SIZE, self.IMAGE_SIZE))
+                observation = np.zeros((self.IMAGE_WIDTH, self.IMAGE_HEIGHT, 3))
                 reward = 0
             else:
                 observation = self.get_observation()
@@ -94,7 +97,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             show: If True, displays the observation in an cv2 window.
         """
 
-        rgb, depth = self.controller.get_image_data(width=self.IMAGE_SIZE, height=self.IMAGE_SIZE, show=show)
+        rgb, depth = self.controller.get_image_data(width=self.IMAGE_WIDTH, height=self.IMAGE_HEIGHT, show=show)
+        # return np.zeros((20,20))
         return rgb
 
 
@@ -112,10 +116,12 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             qpos = self.data.qpos
             qvel = self.data.qvel
             qpos[-3:] = target_values
+            # Option 1: Just set the desired starting joint angles
+            qpos[self.controller.actuated_joint_ids] = [-1.57, -1.57, 1.57, -0.8, 0.5, 1.0, 0.2, 0.2, 0.0, -0.1]
             self.set_state(qpos, qvel)
 
-        # Use the controller to move back to a starting position. In this case just use the default initial controller setpoints.
-        self.controller.move_group_to_joint_target(group='Arm')
+        # Option 2: Use the controller to move back to a starting position. In this case just use the default initial controller setpoints.
+        # self.controller.move_group_to_joint_target(group='Arm')
 
         # return an observation image
         # TODO: include depth data in observation
@@ -125,3 +131,10 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def close(self):
         mujoco_env.MujocoEnv.close(self)
         cv.destroyAllWindows()
+
+
+    def print_info(self):
+        print('Model timestep:', self.model.opt.timestep)
+        print('Set number of frames skipped: ', self.frame_skip)
+        print('dt = timestep * frame_skip: ', self.dt)
+        print('Frames per second = 1/dt: ', self.metadata['video.frames_per_second'])

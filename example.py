@@ -1,4 +1,4 @@
-from MujocoController import MJ_Controller
+from gym_grasper.controller.MujocoController import MJ_Controller
 
 # create controller instance
 controller = MJ_Controller()
