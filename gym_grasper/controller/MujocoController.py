@@ -50,6 +50,8 @@ class MJ_Controller(object):
         self.current_output = np.zeros(len(self.sim.data.ctrl))
         self.image_counter = 0
         self.ee_chain = ikpy.chain.Chain.from_urdf_file(path + '/UR5+gripper/ur5_gripper.urdf')
+        self.cam_matrix = None
+        self.cam_init = False
         # self.move_group_to_joint_target()
 
 
@@ -508,10 +510,76 @@ class MJ_Controller(object):
             # cv.waitKey(delay=5000)
             # cv.destroyAllWindows()
 
-        return (rgb, depth)
+        return np.array(np.fliplr(np.flipud(rgb))), np.array(np.fliplr(np.flipud(depth)))
 
 
-    def add_marker(self, coordinates):
+    def depth_2_meters(self, depth):
+        """
+        Converts the depth array delivered by MuJoCo (values between 0 and 1) into actual m values. 
+
+        Args:
+            depth: The depth array to be converted. 
+        """
+
+        extend = self.model.stat.extent
+        near = self.model.vis.map.znear * extend
+        far = self.model.vis.map.zfar * extend
+        meter_image = near / (1 - depth * (1 - near / far))
+        return meter_image
+
+
+    def create_camera_data(self, width, height, camera):
+        """
+        Initializes all camera parameters that only need to be calculated once.
+        """
+
+        cam_id = self.model.camera_name2id(camera)
+        # Get field of view
+        fovy = self.model.cam_fovy[cam_id]
+        # Calculate focal length
+        f = 0.5 * height / np.tan(fovy * np.pi / 360)
+        # Construct camera matrix
+        self.cam_matrix = np.array(((f, 0, width / 2), (0, f, height / 2), (0, 0, 1)))
+        # Rotation of camera in world coordinates
+        self.cam_rot_mat = self.model.cam_mat0[cam_id]
+        self.cam_rot_mat = np.reshape(self.cam_rot_mat, (3,3))
+        # Position of camera in world coordinates
+        self.cam_pos = self.model.cam_pos0[cam_id]
+        self.cam_init = True
+
+
+    def world_2_pixel(self, world_coordinate, width=200, height=200, camera='top_down'):
+        """
+        Takes a XYZ world position and transforms it into pixel coordinates. 
+        Mainly implemented for testing the correctness of the camera matrix, focal length etc. 
+        """
+
+        if not self.cam_init:
+            self.create_camera_data(width, height, camera)
+        
+        # Homogeneous image point 
+        hom_pixel = self.cam_matrix @ self.cam_rot_mat @ (world_coordinate - self.cam_pos)
+        # Real image point
+        pixel = hom_pixel[:2] / hom_pixel[2]
+
+        return np.round(pixel[0]).astype(int), np.round(pixel[1]).astype(int)
+
+
+    def pixel_2_world(self, pixel_x, pixel_y, depth, width=200, height=200, camera='top_down'):
+
+        if not self.cam_init:
+            self.create_camera_data(width, height, camera)
+
+        # Create coordinate vector
+        pixel_coord = np.array([pixel_x, pixel_y, 1]) * (-depth)
+        # Get position relative to camera
+        pos_c = np.linalg.inv(self.cam_matrix) @ pixel_coord
+        # Get world position
+        pos_w = np.linalg.inv(self.cam_rot_mat) @ (pos_c + self.cam_pos)
+
+        return pos_w
+
+    def add_marker(self, coordinates, label=True, size=[0.015, 0.015, 0.015], color=[1,0,0]):
         """
         Adds a circular red marker at the coordinates, dislaying the coordinates as a label.
 
@@ -519,4 +587,10 @@ class MJ_Controller(object):
             coordinates: List of XYZ-coordinates in m.
         """
         
-        self.viewer.add_marker(pos=coordinates, label=str(coordinates), size=np.ones(3) * 0.015, rgba=[1,0,0,1], type=2)
+        if label:
+            label_str = str(coordinates)
+        else:
+            label_str = ''
+
+        rgba = np.concatenate((color, np.ones(1)))
+        self.viewer.add_marker(pos=coordinates, label=label_str, size=size, rgba=rgba, type=2)

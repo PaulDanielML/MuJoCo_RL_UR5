@@ -17,8 +17,8 @@ from pathlib import Path
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def __init__(self, file='/UR5+gripper/UR5gripper_reacher.xml', mode='reacher'):
         self.initialized = False
-        self.IMAGE_WIDTH = 500
-        self.IMAGE_HEIGHT = 500
+        self.IMAGE_WIDTH = 200
+        self.IMAGE_HEIGHT = 200
         self.task_mode = mode
         self.step_called = 0
         utils.EzPickle.__init__(self)
