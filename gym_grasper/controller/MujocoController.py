@@ -552,6 +552,12 @@ class MJ_Controller(object):
         """
         Takes a XYZ world position and transforms it into pixel coordinates. 
         Mainly implemented for testing the correctness of the camera matrix, focal length etc. 
+
+        Args:
+            world_coordinate: XYZ world coordinate to be transformed into pixel space. 
+            width: Width of the image (pixel).
+            height: Height of the image (pixel).
+            camera: Name of camera used to obtain the image.
         """
 
         if not self.cam_init:
@@ -566,6 +572,17 @@ class MJ_Controller(object):
 
 
     def pixel_2_world(self, pixel_x, pixel_y, depth, width=200, height=200, camera='top_down'):
+        """
+        Converts pixel coordinates into world coordinates. 
+
+        Args:
+            pixel_x: X-coordinate in pixel space.
+            pixel_y: Y-coordinate in pixel space.
+            depth: Depth value corresponding to the pixel.
+            width: Width of the image (pixel).
+            height: Height of the image (pixel).
+            camera: Name of camera used to obtain the image.
+        """
 
         if not self.cam_init:
             self.create_camera_data(width, height, camera)
@@ -585,6 +602,9 @@ class MJ_Controller(object):
 
         Args:
             coordinates: List of XYZ-coordinates in m.
+            label: If True, displays the target coordinates next to the marker
+            size: List of floats specifying the radius in each direction
+            color: List of floats between 0 and 1 specifying the RGB color parts
         """
         
         if label:
