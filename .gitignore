@@ -4,3 +4,4 @@ MUJOCO_LOG.TXT
 tester.py
 __pycache__/
 Joint_values*
+Grasp*

@@ -52,6 +52,7 @@ class MJ_Controller(object):
         self.ee_chain = ikpy.chain.Chain.from_urdf_file(path + '/UR5+gripper/ur5_gripper.urdf')
         self.cam_matrix = None
         self.cam_init = False
+        self.last_movement_steps = 0
         # self.move_group_to_joint_target()
 
 
@@ -133,17 +134,18 @@ class MJ_Controller(object):
         self.controller_list = []
         sample_time = 0.001
         p_scale = 5
-        d_scale = 0
-        self.controller_list.append(PID(5*p_scale, 0.0, 1.1*d_scale, setpoint=-1.57, output_limits=(-2, 2), sample_time=sample_time)) # Shoulder Pan Joint
-        self.controller_list.append(PID(15*p_scale, 0.0, 0.5*d_scale, setpoint=-1.57, output_limits=(-2, 2), sample_time=sample_time)) # Shoulder Lift Joint
-        self.controller_list.append(PID(5*p_scale, 0.0, 0.5*d_scale, setpoint=1.57, output_limits=(-2, 2), sample_time=sample_time)) # Elbow Joint
-        self.controller_list.append(PID(5*p_scale, 0.0, 0.1*d_scale, setpoint=-0.8, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 1 Joint
-        self.controller_list.append(PID(5*p_scale, 0.0, 0.1*d_scale, setpoint=0.5, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 2 Joint
-        self.controller_list.append(PID(5*p_scale, 0.0, 0.1*d_scale, setpoint=1.0, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 3 Joint
-        self.controller_list.append(PID(2*p_scale, 0.1, 0.05*d_scale, setpoint=0.2, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Finger 1 Joint 1
-        self.controller_list.append(PID(2*p_scale, 0.1, 0.05*d_scale, setpoint=0.2, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Finger 2 Joint 1
-        self.controller_list.append(PID(1*p_scale, 0.1, 0.05*d_scale, setpoint=0.0, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Middle Finger Joint 1
-        self.controller_list.append(PID(1*p_scale, 0.1, 0.05*d_scale, setpoint=-0.1, output_limits=(-0.8, 0.8), sample_time=sample_time)) # Gripperpalm Finger 1 Joint
+        i_scale = 0
+        d_scale = 0.1
+        self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 1.1*d_scale, setpoint=-1.57, output_limits=(-2, 2), sample_time=sample_time)) # Shoulder Pan Joint
+        self.controller_list.append(PID(15*p_scale, 0.0*i_scale, 0.5*d_scale, setpoint=-1.57, output_limits=(-2, 2), sample_time=sample_time)) # Shoulder Lift Joint
+        self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 0.5*d_scale, setpoint=1.57, output_limits=(-2, 2), sample_time=sample_time)) # Elbow Joint
+        self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 0.1*d_scale, setpoint=-0.8, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 1 Joint
+        self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 0.1*d_scale, setpoint=0.5, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 2 Joint
+        self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 0.1*d_scale, setpoint=1.0, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 3 Joint
+        self.controller_list.append(PID(2*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.2, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Finger 1 Joint 1
+        self.controller_list.append(PID(2*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.2, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Finger 2 Joint 1
+        self.controller_list.append(PID(1*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.0, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Middle Finger Joint 1
+        self.controller_list.append(PID(1*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=-0.1, output_limits=(-0.8, 0.8), sample_time=sample_time)) # Gripperpalm Finger 1 Joint
 
         self.current_target_joint_values = []
         for i in range(len(self.sim.data.ctrl)):
@@ -233,7 +235,7 @@ class MJ_Controller(object):
                 if plot and steps%20==0:
                     self.fill_plot_list(group, steps)
 
-                temp = self.sim.data.body_xpos[self.model.body_name2id('ee_link')] - [0, -0.01, 0.205]
+                temp = self.sim.data.body_xpos[self.model.body_name2id('ee_link')] - [0, 0, 0.185]
 
                 if marker:
                     self.add_marker(self.current_carthesian_target)
@@ -242,7 +244,6 @@ class MJ_Controller(object):
                 if max(deltas) < tolerance:
                     if target is not None and not quiet:
                         print(colored('Joint values for group {} within requested tolerance! ({} steps)'.format(group, steps), color='green', attrs=['bold']))
-                        print('Tolerance reached at step: ', steps)
                     result = 'success'
                     self.reached_target = True
                     break
@@ -250,14 +251,16 @@ class MJ_Controller(object):
                 if steps > max_steps:
                     if not quiet:
                         print(colored('Max number of steps reached: {}'.format(max_steps), color='red', attrs=['bold']))
+                        print('Deltas: ', deltas)
                     result = 'max. steps reached: {}'.format(max_steps)
-                    print(deltas)
                     break
 
                 self.sim.step()
                 if render:
                     self.viewer.render()
                 steps += 1
+
+            self.last_movement_steps = steps
 
             if plot:
                 self.create_joint_angle_plot(group=group, tolerance=tolerance)
@@ -283,34 +286,34 @@ class MJ_Controller(object):
 
        
 
-    def open_gripper(self, render=True):
+    def open_gripper(self, render=True, quiet=True):
         """
         Opens the gripper while keeping the arm in a steady position.
         """
 
         # print('Opening gripper...')
-        result = self.move_group_to_joint_target(group='Gripper', target=[0.2, 0.2, 0.0, -0.1], marker=True, max_steps=1000, quiet=True, render=render)
+        result = self.move_group_to_joint_target(group='Gripper', target=[0.2, 0.2, 0.0, -0.1], marker=True, max_steps=1000, quiet=quiet, render=render)
         return result
 
 
-    def close_gripper(self, render=True, max_steps=1000):
+    def close_gripper(self, render=True, max_steps=1000, plot=False, quiet=True):
         """
         Closes the gripper while keeping the arm in a steady position.
         """
 
         # print('Closing gripper...')
-        result = self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, max_steps=max_steps, render=render, marker=True, quiet=True)
+        result = self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, max_steps=max_steps, render=render, marker=True, quiet=quiet, plot=plot)
         # print('Gripper joint positions:')
         # print(self.sim.data.qpos[self.actuated_joint_ids][self.groups['Gripper']])
         return result
 
 
-    def grasp(self, render=True):
+    def grasp(self, render=True, plot=False):
         """
         Attempts a grasp at the current location and prints some feedback on weather it was successful 
         """
 
-        result = self.close_gripper(render=render)
+        result = self.close_gripper(render=render, plot=plot, max_steps=300)
         # if not self.reached_target:
         #     print(colored('Grasped something!', color='green', attrs=['bold', 'blink']))
         # else:
@@ -365,9 +368,10 @@ class MJ_Controller(object):
 
             # By adding the appr. distance between ee_link and grasp center, we can now specify a world target position
             # for the grasp center instead of the ee_link
-            gripper_center_position = ee_position_base + [0, -0.01, 0.205]
+            gripper_center_position = ee_position_base + [0, 0, 0.185]
+            # gripper_center_position = ee_position_base + [0, -0.01, 0.195]
 
-            initial_position=[0, *self.sim.data.qpos[self.actuated_joint_ids][self.groups['Arm']], 0]
+            # initial_position=[0, *self.sim.data.qpos[self.actuated_joint_ids][self.groups['Arm']], 0]
             # joint_angles = self.ee_chain.inverse_kinematics(gripper_center_position, [0,0,-1], orientation_mode='X', initial_position=initial_position, regularization_parameter=0.05)
             joint_angles = self.ee_chain.inverse_kinematics(gripper_center_position, [0,0,-1], orientation_mode='X')
 
@@ -493,7 +497,7 @@ class MJ_Controller(object):
         t = 0
         while t < duration:
             if t%10 == 0:
-                self.move_group_to_joint_target(max_steps=1, plot=False)
+                self.move_group_to_joint_target(max_steps=1, plot=False, quiet=True)
             t += 1
             time.sleep(0.001)
         print('Moving on...')
@@ -672,3 +676,7 @@ class MJ_Controller(object):
 
         rgba = np.concatenate((color, np.ones(1)))
         self.viewer.add_marker(pos=coordinates, label=label_str, size=size, rgba=rgba, type=2)
+
+    @property
+    def last_steps(self):
+        return self.last_movement_steps
