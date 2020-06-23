@@ -258,10 +258,26 @@ Control Engineering / Automation Engineering
             </body>
         </body>
 
-        <body name="pick_box_1" pos="0 -0.6 0.9">
+   <!--      <body name="pick_box_1" pos="0 -0.6 0.9">
                 <freejoint name="tablebox_joint" />
                 <geom size="0.03 0.03 0.03" pos="0 0 0.03" type="box" material="tablecube"/>
                 <inertial pos="0 0 0.03" mass="0.5" diaginertia="0 0 0" />
+        </body> -->
+
+        <body name="box_1" pos="-.1 -.6 1.0">
+            <joint armature="0" axis="1 0 0" damping="0" limited="true" name="box_1_x" pos="0 0 0" range="-5. 5." ref=".1" stiffness="0" type="slide"/>
+            <joint armature="0" axis="0 1 0" damping="0" limited="true" name="box_1_y" pos="0 0 0" range="-5. 5." ref="-.1" stiffness="0" type="slide"/>
+            <joint armature="0" axis="0 0 1" damping="0" limited="true" name="box_1_z" pos="0 0 0" range="-2. 2." ref="-.1" stiffness="0" type="slide"/>
+            <geom name="box_1" pos="0 0 0" material="tablecube" size="0.02 0.02 0.02" type="box"/>
+            <inertial pos="0 0 0.01" mass="0.2" diaginertia="0 0 0" />
+        </body>
+
+        <body name="ball_1" pos=".2 -.5 1.0">
+            <joint armature="0" axis="1 0 0" damping="0" limited="true" name="ball_1_x" pos="0 0 0" range="-5. 5." ref=".1" stiffness="0" type="slide"/>
+            <joint armature="0" axis="0 1 0" damping="0" limited="true" name="ball_1_y" pos="0 0 0" range="-5. 5." ref="-.1" stiffness="0" type="slide"/>
+            <joint armature="0" axis="0 0 1" damping="0" limited="true" name="ball_1_z" pos="0 0 0" range="-2. 2." ref="-.1" stiffness="0" type="slide"/>
+            <geom name="ball_1" pos="0 0 0" rgba="0.9 0.2 0.2 1" size=".03" type="sphere"/>
+            <inertial pos="0 0 0.01" mass="0.2" diaginertia="0 0 0" />
         </body>
 
     </worldbody>
