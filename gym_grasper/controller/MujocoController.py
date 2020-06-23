@@ -239,7 +239,7 @@ class MJ_Controller(object):
 
                 if marker:
                     self.add_marker(self.current_carthesian_target)
-                    self.add_marker(temp)
+                    # self.add_marker(temp)
 
                 if max(deltas) < tolerance:
                     if target is not None and not quiet:
