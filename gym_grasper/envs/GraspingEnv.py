@@ -80,7 +80,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 reward = -10
 
             else:
-                grasped_something = self.move_and_grasp(coordinates, render=False, record_grasps=record_grasps)
+                grasped_something = self.move_and_grasp(coordinates, render=True, record_grasps=record_grasps)
 
                 if grasped_something:
                     reward = 100
@@ -282,7 +282,37 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         qvel = self.data.qvel
         #     qpos[-3:] = target_values
         #     # Option 1: Just set the desired starting joint angles
-        qpos[self.controller.actuated_joint_ids] = [-1.57, -1.57, 1.57, -0.8, -1.57, 1.0, 0.2, 0.2, 0.0, -0.1]
+        qpos[self.controller.actuated_joint_ids] = [0, -1.57, 1.57, -0.8, -1.57, 1.0, 0.2, 0.2, 0.0, -0.1]
+
+        n_boxes = 3
+        n_balls = 3
+
+        for j in ['x', 'y', 'z']:
+        # for j in ['x', 'y', 'z', 'rot']:
+            for i in range(1,n_boxes+1):
+                joint_name = 'box_' + str(i) + '_' + j
+                joint_id = self.model.joint_name2id(joint_name)
+                if j == 'x':
+                    qpos[joint_id] = np.random.uniform(low=-0.25, high=0.25)
+                elif j == 'y':
+                    qpos[joint_id] = np.random.uniform(low=-0.17, high=0.17)
+                elif j == 'z':
+                    qpos[joint_id] = np.random.uniform(low=0, high=0.2)
+                # elif j == 'rot':
+                    # qpos[joint_id] = -1
+
+            for i in range(1,n_balls+1):
+                joint_name = 'ball_' + str(i) + '_' + j
+                joint_id = self.model.joint_name2id(joint_name)
+                if j == 'x':
+                    qpos[joint_id] = np.random.uniform(low=-0.25, high=0.25)
+                elif j == 'y':
+                    qpos[joint_id] = np.random.uniform(low=-0.17, high=0.17)
+                elif j == 'z':
+                    qpos[joint_id] = np.random.uniform(low=0, high=0.2)
+                elif j == 'rot':
+                    qpos[joint_id] = -1
+
         self.set_state(qpos, qvel)
 
         # Option 2: Use the controller to move back to a starting position. In this case just use the default initial controller setpoints.
