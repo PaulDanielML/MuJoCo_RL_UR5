@@ -37,7 +37,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.grasp_counter = 0
        
 
-    def step(self, action):
+    def step(self, action, record_grasps=False):
         """
         Lets the agent execute the action.
         Depending on the value set when calling mujoco_env.MujocoEnv.__init__(), one step of the agent will correspond to
@@ -80,7 +80,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 reward = -10
 
             else:
-                grasped_something = self.move_and_grasp(coordinates, render=False)
+                grasped_something = self.move_and_grasp(coordinates, render=False, record_grasps=record_grasps)
 
                 if grasped_something:
                     reward = 100
@@ -174,7 +174,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.data.ctrl[:] = 0
 
 
-    def move_and_grasp(self, coordinates, render=False):
+    def move_and_grasp(self, coordinates, render=False, record_grasps=False):
 
         # Move to pre grasping position and height
         # coordinates_1 = copy.deepcopy(coordinates)
@@ -207,6 +207,17 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         result_final = self.controller.close_gripper(max_steps=500, render=render)
 
+        grasped_something = result_final[:3] == 'max' and result_grasp
+
+        if grasped_something and record_grasps:
+            capture_rgb, depth = self.controller.get_image_data(width=1000, height=1000, camera='side')
+            self.grasp_counter += 1
+            img_name = 'Grasp_{}.png'.format(self.grasp_counter)
+            cv.imwrite(img_name, cv.cvtColor(capture_rgb, cv.COLOR_BGR2RGB))
+
+        result4 = self.controller.move_ee([0.4, -0.4, 1.1], marker=True, max_steps=1000, quiet=True, render=render, plot=False)
+        steps4 = self.controller.last_steps
+
         if result_final == 'success':
             final_str = 'Nothing in the gripper'
         else:
@@ -219,20 +230,16 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         print('Grasped anything?: '.ljust(40, ' '), result_grasp)
         print('Move back to initial position: '.ljust(40, ' '), result3, ',', steps3, 'steps')
         print('Final finger check: '.ljust(40, ' '), final_str)
+        print('Move to drop position: '.ljust(40, ' '), result4, ',', steps4, 'steps')
 
 
-        if result1 == result2 == result3 == result_open == 'success':
+        if result1 == result2 == result3 == result4 == result_open == 'success':
             print(colored('Executed all movements successfully.', color='green', attrs=['bold']))
         else:
             print(colored('Could not execute all movements successfully.', color='red', attrs=['bold']))
 
-        if result_final[:3] == 'max' and result_grasp:
+        if grasped_something:
             print(colored('Successful grasp!', color='green', attrs=['bold'])) 
-            capture_rgb, depth = self.controller.get_image_data(width=1000, height=1000, camera='side')
-            self.grasp_counter += 1
-            img_name = 'Grasp_{}.png'.format(self.grasp_counter)
-            cv.imwrite(img_name, cv.cvtColor(capture_rgb, cv.COLOR_BGR2RGB))
-
             return True         
         else:
             print(colored('Did not grasp anything.', color='red', attrs=['bold']))
@@ -256,6 +263,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         observation = defaultdict()
         observation['rgb'] = rgb
         observation['depth'] = depth
+
         return observation
 
 

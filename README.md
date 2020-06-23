@@ -1,17 +1,16 @@
-
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
-## Work in progress! Current gym environment contains a reacher task,  with rgb-d camera images as observations.
+## Work in progress! Current grasping gym environment version: 1.0 <br/> Next TO-DOs: add multiple objects, respawn them at random positions when resetting the environment
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
 This repository provides several python classes for control of robotic arms in MuJoCo: 
 
- - **MJ_Controller:** This class can be used as a standalone class for basic robot control in MuJoCo. This can be useful for trying out models and their grasping capabilities. 
+ * **MJ_Controller:** This class can be used as a standalone class for basic robot control in MuJoCo. This can be useful for trying out models and their grasping capabilities. 
  Alternatively, its methods can also be used by any other class (like a Gym environment) to provide some more functionality. One example of this might be to move the robot back into a certain position after every episode of training, which might be preferable compared to just resetting all the joint angles and velocities. 
  The controller currently also holds the methods for image transformations, which might be put into another separate class at some point. 
 
-- **GraspEnv:** A Gym environment for training reinforcement learning agents. The currently implemented task is a simple reacher task. This will be extended or replaced by a grasping task. 
+* **GraspEnv:** A Gym environment for training reinforcement learning agents. Currently a basic lifting task is implemented. 
 The difference to most other MuJoCo Gym environments is that the observation returned is a camera image instead of a state vector of the simulation. This is meant to resemble a real world setup more closely. 
 
 The robot configuration used in this setup (Universal Robots UR5 + Robotiq S Model 3 Finger Gripper) is based on [this](http://www.mujoco.org/forum/index.php?resources/universal-robots-ur5-robotiq-s-model-3-finger-gripper.22/) resource.  
@@ -48,7 +47,20 @@ This is all the setup required to use this repo.
 
 The file [*example_agent.py*](example_agent.py) demonstrates the use of a random agent for this environment.
 The created environment has an associated controller object, which provides all the functionality of the *MJ_Controller* - class to it. 
+* **Action space**: Pixel space, can be specified by setting height and width. Current defaults: 200x200. This means there are 40.000 possible actions. This resolution translates to a picking accuracy of ~ 4mm.
+* **State space**: The states / observations provided are dictionaries containing two arrays: An RGB-image and a depth-image, both of the same resolution as the action space
+* **Reward function**: Currently the environment can yield three different rewards: 
+    * -10 if a pixel is chosen that is outside certain limits (on the floor or the robot itself).
+    * 0 for choosing a pixel within the reachable space of the robot that does not lead to a successful grasp.
+    * +100 for choosing a pixel that leads to a successful grasp.
 
+The user gets a summary of each step performed in the console. It is recommended to train agents without rendering, as this will speed up training significantly. 
+    
+![console](/media/console.png "Example console output during training")
+
+The rgb part of the last captured observation will be shown and updated in an extra window.
+
+![observation](/media/observation_rgb.png "Example observation")
 
 ### **MJ_Controller - class:**
 
@@ -63,6 +75,10 @@ The class *MJ_Controller* offers high and low level methods for controlling the 
 ![gif1](/media/gif_1.gif "Simple Grasp and Toss")
 
 ## **Updates**
+
+**Record grasps:** The step method of the *GraspingEnv* now has the optional parameter *record_grasps*. If set to True, it will capture a side camera image every time a grasp is made that is deemed successful by the environment. This allows for "quality control" of the grasps, without having to watch all the failed attempts. The captured images can also be useful for fine tuning grasping parameters. 
+
+![grasp](/media/grasp.png "Example grasp")
 
 **Point clouds:** The controller class was provided with new methods for image transformations. 
 * depth_2_meters: Converts the normalized depth values returned by mujoco_py into m.
