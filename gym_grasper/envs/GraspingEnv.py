@@ -282,7 +282,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         qvel = self.data.qvel
         #     qpos[-3:] = target_values
         #     # Option 1: Just set the desired starting joint angles
-        qpos[self.controller.actuated_joint_ids] = [0, -1.57, 1.57, -0.8, -1.57, 1.0, 0.2, 0.2, 0.0, -0.1]
+        qpos[self.controller.actuated_joint_ids] = [0, -1.57, 1.57, -1.57, -1.57, 1.0, 0.2, 0.2, 0.0, -0.1]
 
         n_boxes = 3
         n_balls = 3
@@ -316,6 +316,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                     qpos[joint_id] = -1
 
         self.set_state(qpos, qvel)
+
+        self.controller.set_group_joint_target(group='All', target= qpos[self.controller.actuated_joint_ids])
 
         # Option 2: Use the controller to move back to a starting position. In this case just use the default initial controller setpoints.
         # self.controller.move_group_to_joint_target(group='Arm')

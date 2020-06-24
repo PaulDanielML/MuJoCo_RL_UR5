@@ -1,3 +1,4 @@
+
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
 ## Work in progress! Current grasping gym environment version: 1.0 <br/> Next TO-DOs: add multiple objects, respawn them at random positions when resetting the environment
@@ -75,6 +76,10 @@ The class *MJ_Controller* offers high and low level methods for controlling the 
 ![gif1](/media/gif_1.gif "Simple Grasp and Toss")
 
 ## **Updates**
+
+**Reset shuffle:** Calling the environments *step* method now rearranges all the pickable objects to random positions on the table. 
+
+![gif2](/media/gif_2.gif "Respawning")
 
 **Record grasps:** The step method of the *GraspingEnv* now has the optional parameter *record_grasps*. If set to True, it will capture a side camera image every time a grasp is made that is deemed successful by the environment. This allows for "quality control" of the grasps, without having to watch all the failed attempts. The captured images can also be useful for fine tuning grasping parameters. 
 

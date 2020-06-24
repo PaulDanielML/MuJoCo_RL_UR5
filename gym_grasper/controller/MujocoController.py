@@ -246,7 +246,7 @@ class MJ_Controller(object):
                         print(colored('Joint values for group {} within requested tolerance! ({} steps)'.format(group, steps), color='green', attrs=['bold']))
                     result = 'success'
                     self.reached_target = True
-                    break
+                    # break
 
                 if steps > max_steps:
                     if not quiet:
