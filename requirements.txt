@@ -7,3 +7,4 @@ pyquaternion
 cv2
 matplotlib
 gym
+pickle
