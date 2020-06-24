@@ -275,7 +275,7 @@ class MJ_Controller(object):
 
     def set_group_joint_target(self, group, target):
 
-        idx = self.actuated_joint_ids[self.groups[group]]
+        idx = self.groups[group]
         try:
             assert len(target) == len(idx), 'Length of the target must match the number of actuated joints in the group.'
             self.current_target_joint_values[idx] = target
@@ -485,7 +485,7 @@ class MJ_Controller(object):
         self.move_group_to_joint_target()
 
 
-    def stay(self, duration):
+    def stay(self, duration, render=True):
         """
         Holds the current position by actuating the joints towards their current target position.
 
@@ -493,14 +493,14 @@ class MJ_Controller(object):
             duration: Time in ms to hold the position.
         """
 
-        print('Holding position!')
+        # print('Holding position!')
         t = 0
         while t < duration:
             if t%10 == 0:
-                self.move_group_to_joint_target(max_steps=1, plot=False, quiet=True)
+                self.move_group_to_joint_target(max_steps=1, plot=False, quiet=True, render=render)
             t += 1
             time.sleep(0.001)
-        print('Moving on...')
+        # print('Moving on...')
 
 
     def fill_plot_list(self, group, step):

@@ -7,7 +7,7 @@ from termcolor import colored
 env = gym.make('gym_grasper:Grasper-v0')
 
 N_EPISODES = 100
-N_STEPS = 100
+N_STEPS = 1
 
 env.print_info()
 
@@ -19,7 +19,7 @@ for episode in range(1, N_EPISODES+1):
         print('#################################################################')
         action = env.action_space.sample()
         # action = [100,100]
-        observation, reward, done, _ = env.step(action)
+        observation, reward, done, _ = env.step(action, record_grasps=True)
 
 env.close()
 

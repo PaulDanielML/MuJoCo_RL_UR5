@@ -37,7 +37,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.grasp_counter = 0
        
 
-    def step(self, action, record_grasps=False):
+    def step(self, action, render=False, record_grasps=False):
         """
         Lets the agent execute the action.
         Depending on the value set when calling mujoco_env.MujocoEnv.__init__(), one step of the agent will correspond to
@@ -80,7 +80,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 reward = -10
 
             else:
-                grasped_something = self.move_and_grasp(coordinates, render=True, record_grasps=record_grasps)
+                grasped_something = self.move_and_grasp(coordinates, render=render, record_grasps=record_grasps)
 
                 if grasped_something:
                     reward = 100
@@ -297,7 +297,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 elif j == 'y':
                     qpos[joint_id] = np.random.uniform(low=-0.17, high=0.17)
                 elif j == 'z':
-                    qpos[joint_id] = np.random.uniform(low=0, high=0.2)
+                    qpos[joint_id] = 0.0
+                    # qpos[joint_id] = np.random.uniform(low=0, high=0.2)
                 # elif j == 'rot':
                     # qpos[joint_id] = -1
 
@@ -309,7 +310,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 elif j == 'y':
                     qpos[joint_id] = np.random.uniform(low=-0.17, high=0.17)
                 elif j == 'z':
-                    qpos[joint_id] = np.random.uniform(low=0, high=0.2)
+                    qpos[joint_id] = 0.0
+                    # qpos[joint_id] = np.random.uniform(low=0, high=0.2)
                 elif j == 'rot':
                     qpos[joint_id] = -1
 
