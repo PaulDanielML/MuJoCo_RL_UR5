@@ -19,11 +19,11 @@ from termcolor import colored
 
 
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
-    def __init__(self, file='/UR5+gripper/UR5gripper_v2.xml', mode='reacher'):
+    def __init__(self, file='/UR5+gripper/UR5gripper_v2.xml', image_width=200, image_height=200):
         self.initialized = False
-        self.IMAGE_WIDTH = 200
-        self.IMAGE_HEIGHT = 200
-        self.task_mode = mode
+        self.IMAGE_WIDTH = image_width
+        self.IMAGE_HEIGHT = image_height
+        self.action_space_type = 'discrete'
         self.step_called = 0
         utils.EzPickle.__init__(self)
         path = os.path.realpath(__file__)
@@ -66,8 +66,13 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             if self.step_called == 1:
                 self.current_observation = self.get_observation(show=False)
 
-            x = action[0]
-            y = action[1]
+            if self.action_space_type == 'discrete':
+                x = action % self.IMAGE_WIDTH
+                y = action // self.IMAGE_WIDTH
+
+            elif self.action_space_type == 'multidiscrete':
+                x = action[0]
+                y = action[1]
 
             coordinates = self.controller.pixel_2_world(pixel_x=x, pixel_y=y, depth=self.current_observation['depth'][y][x], height=self.IMAGE_HEIGHT, width=self.IMAGE_WIDTH)
 
@@ -100,7 +105,12 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
 
     def _set_action_space(self):
-        self.action_space = spaces.MultiDiscrete([self.IMAGE_HEIGHT, self.IMAGE_WIDTH])
+        if self.action_space_type == 'discrete':
+            size = self.IMAGE_WIDTH * self.IMAGE_HEIGHT
+            self.action_space = spaces.Discrete(size)
+        elif self.action_space_type == 'multidiscrete':
+            self.action_space = spaces.MultiDiscrete([self.IMAGE_HEIGHT, self.IMAGE_WIDTH])
+
         return self.action_space
 
 
@@ -224,15 +234,10 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         Gets called in the parent classes reset method.
         """
 
-        # if self.task_mode == 'reacher':
-        #     target_values = []
-        #     target_values.append(np.random.uniform(low=-0.2, high=0.2))
-        #     target_values.append(np.random.uniform(low=-0.2, high=0.05))
-        #     target_values.append(np.random.uniform(low=-0.15, high=0.15))
+      
         qpos = self.data.qpos
         qvel = self.data.qvel
-        #     qpos[-3:] = target_values
-        #     # Option 1: Just set the desired starting joint angles
+
         qpos[self.controller.actuated_joint_ids] = [0, -1.57, 1.57, -1.57, -1.57, 1.0, 0.2, 0.2, 0.0, -0.1]
 
         n_boxes = 3
@@ -270,9 +275,6 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         self.controller.set_group_joint_target(group='All', target= qpos[self.controller.actuated_joint_ids])
 
-        # Option 2: Use the controller to move back to a starting position. In this case just use the default initial controller setpoints.
-        # self.controller.move_group_to_joint_target(group='Arm')
-
         # return an observation image
         return self.get_observation()
 
@@ -288,5 +290,4 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         print('dt = timestep * frame_skip: ', self.dt)
         print('Frames per second = 1/dt: ', self.metadata['video.frames_per_second'])
         print('Actionspace: ', self.action_space)
-        print('Number of possible actions: ', self.action_space.nvec[0]*self.action_space.nvec[1])
         print('Observation space:', self.observation_space)
