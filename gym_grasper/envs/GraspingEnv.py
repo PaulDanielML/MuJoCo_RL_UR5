@@ -99,55 +99,6 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         return self.current_observation, reward, done, info
 
 
-    def step2(self, action):
-        """
-        Alternative step method for simply setting the calculated joint values instead of moving to them. 
-        Potentially way faster, might be used later for actual training.
-        """
-
-            # Parent class will step once during init to set up the observation space, controller is not yet available at that time.
-            # Therefore we simply return an array of zeros of the appropriate size. 
-        if not self.initialized:
-            observation = np.zeros((self.IMAGE_WIDTH, self.IMAGE_HEIGHT, 3))
-            reward = 0
-        else:
-            observation = self.get_observation(show=False)
-
-            x = action[0]
-            y = action[1]
-
-            coordinates = self.controller.pixel_2_world(pixel_x=x, pixel_y=y, depth=observation['depth'][y][x], height=self.IMAGE_HEIGHT, width=self.IMAGE_WIDTH)
-
-            coordinates[2] -= 0.05
-
-            self.set_grasp_position(coordinates)
-
-            self.controller.grasp(render=True)
-
-            reward = 0
-            observation = self.get_observation()
-
-
-
-        done = False
-
-
-
-        info = {}
-        self.step_called += 1
-
-        # for _ in range(self.frame_skip):
-            # self.sim.step()
-
-        return observation, reward, done, info
-
-        # except Exception as e:
-        #     print(e)
-        #     print(traceback.format_exc())
-        #     print('Could not execute step method.')
-
-
-
     def _set_action_space(self):
         self.action_space = spaces.MultiDiscrete([self.IMAGE_HEIGHT, self.IMAGE_WIDTH])
         return self.action_space
@@ -183,7 +134,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         steps1 = self.controller.last_steps
         # self.controller.move_ee(coordinates_1, marker=True, max_steps=1000)
 
-        result_open = self.controller.open_gripper(render=render)
+        result_open = self.controller.open_gripper(render=render, quiet=True)
         steps_open = self.controller.last_steps
 
         # Move to grasping height
@@ -194,7 +145,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         result2 = self.controller.move_ee(coordinates_2, marker=True, max_steps=1000, quiet=True, render=render)
         steps2 = self.controller.last_steps
         
-        result_grasp = self.controller.grasp(render=render)
+        result_grasp = self.controller.grasp(render=render, quiet=True)
 
         # Move up again
         # coordinates_3 = copy.deepcopy(coordinates)
@@ -205,7 +156,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         # self.controller.move_ee(coordinates_3, marker=True, max_steps=1000)
 
-        result_final = self.controller.close_gripper(max_steps=500, render=render)
+        result_final = self.controller.close_gripper(max_steps=500, render=render, quiet=True)
 
         grasped_something = result_final[:3] == 'max' and result_grasp
 
@@ -336,3 +287,6 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         print('Set number of frames skipped: ', self.frame_skip)
         print('dt = timestep * frame_skip: ', self.dt)
         print('Frames per second = 1/dt: ', self.metadata['video.frames_per_second'])
+        print('Actionspace: ', self.action_space)
+        print('Number of possible actions: ', self.action_space.nvec[0]*self.action_space.nvec[1])
+        print('Observation space:', self.observation_space)

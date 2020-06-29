@@ -408,10 +408,16 @@ Control Engineering / Automation Engineering
         <!--<position name='middle_finger'  ctrllimited="true" kp="20" joint='gripperfinger_middle_joint_1' ctrlrange='0 1.2217'/>-->
         <!--<position name='finger_scissor' ctrllimited="true" kp="20" joint='gripperpalm_finger_1_joint' ctrlrange="-0.2967 0.2967"/>-->
 
+        <motor name='finger_1_T' ctrllimited="true" joint='gripperfinger_1_joint_1' ctrlrange='-0.5 .8' gear="20"/>
+        <motor name='finger_2_T' ctrllimited="true" joint='gripperfinger_2_joint_1' ctrlrange='-0.5 .8' gear="20"/>
+        <motor name='middle_finger_T'  ctrllimited="true" joint='gripperfinger_middle_joint_1' ctrlrange='-0.5 .8' gear="20"/>
+        <motor name='finger_scissor_T' ctrllimited="true" joint='gripperpalm_finger_1_joint' ctrlrange="-0.8 0.8" gear="15"/>   
+
+     <!--    
         <motor name='finger_1_T' ctrllimited="true" joint='gripperfinger_1_joint_1' ctrlrange='-0.1 .8' gear="20"/>
         <motor name='finger_2_T' ctrllimited="true" joint='gripperfinger_2_joint_1' ctrlrange='-0.1 .8' gear="20"/>
         <motor name='middle_finger_T'  ctrllimited="true" joint='gripperfinger_middle_joint_1' ctrlrange='-0.1 .8' gear="20"/>
-        <motor name='finger_scissor_T' ctrllimited="true" joint='gripperpalm_finger_1_joint' ctrlrange="-0.8 0.8" gear="15"/>
+        <motor name='finger_scissor_T' ctrllimited="true" joint='gripperpalm_finger_1_joint' ctrlrange="-0.8 0.8" gear="15"/> -->
     </actuator>
 
     <sensor>

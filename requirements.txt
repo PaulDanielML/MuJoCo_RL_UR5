@@ -4,7 +4,6 @@ simple_pid
 termcolor
 ikpy
 pyquaternion
-cv2
+opencv-python
 matplotlib
 gym
-pickle

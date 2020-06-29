@@ -1,7 +1,7 @@
 *.sublime-project
 *.sublime-workspace
 MUJOCO_LOG.TXT
-tester.py
+tester*
 __pycache__/
 Joint_values*
 Grasp*

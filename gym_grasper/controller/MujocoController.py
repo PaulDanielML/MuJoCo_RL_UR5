@@ -142,9 +142,9 @@ class MJ_Controller(object):
         self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 0.1*d_scale, setpoint=-0.8, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 1 Joint
         self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 0.1*d_scale, setpoint=0.5, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 2 Joint
         self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 0.1*d_scale, setpoint=1.0, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 3 Joint
-        self.controller_list.append(PID(2*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.2, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Finger 1 Joint 1
-        self.controller_list.append(PID(2*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.2, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Finger 2 Joint 1
-        self.controller_list.append(PID(1*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.0, output_limits=(-0.1, 0.8), sample_time=sample_time)) # Middle Finger Joint 1
+        self.controller_list.append(PID(2*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.2, output_limits=(-0.5, 0.8), sample_time=sample_time)) # Finger 1 Joint 1
+        self.controller_list.append(PID(2*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.2, output_limits=(-0.5, 0.8), sample_time=sample_time)) # Finger 2 Joint 1
+        self.controller_list.append(PID(1*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.0, output_limits=(-0.5, 0.8), sample_time=sample_time)) # Middle Finger Joint 1
         self.controller_list.append(PID(1*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=-0.1, output_limits=(-0.8, 0.8), sample_time=sample_time)) # Gripperpalm Finger 1 Joint
 
         self.current_target_joint_values = []
@@ -286,38 +286,35 @@ class MJ_Controller(object):
 
        
 
-    def open_gripper(self, render=True, quiet=True):
+    def open_gripper(self, **kwargs):
+    # def open_gripper(self, render=True, quiet=True):
         """
         Opens the gripper while keeping the arm in a steady position.
         """
 
-        # print('Opening gripper...')
-        result = self.move_group_to_joint_target(group='Gripper', target=[0.2, 0.2, 0.0, -0.1], marker=True, max_steps=1000, quiet=quiet, render=render)
+        result = self.move_group_to_joint_target(group='Gripper', target=[0.2, 0.2, 0.0, -0.1], marker=True, max_steps=1000, **kwargs)
         return result
 
 
-    def close_gripper(self, render=True, max_steps=1000, plot=False, quiet=True):
+    def close_gripper(self, **kwargs):
+    # def close_gripper(self, render=True, max_steps=1000, plot=False, quiet=True):
         """
         Closes the gripper while keeping the arm in a steady position.
         """
 
-        # print('Closing gripper...')
-        result = self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, max_steps=max_steps, render=render, marker=True, quiet=quiet, plot=plot)
-        # print('Gripper joint positions:')
-        # print(self.sim.data.qpos[self.actuated_joint_ids][self.groups['Gripper']])
+        result = self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, marker=True, **kwargs)
+        # result = self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, max_steps=max_steps, render=render, marker=True, quiet=quiet, plot=plot)
         return result
 
 
-    def grasp(self, render=True, plot=False):
+    def grasp(self, **kwargs):
+    # def grasp(self, render=True, plot=False):
         """
         Attempts a grasp at the current location and prints some feedback on weather it was successful 
         """
 
-        result = self.close_gripper(render=render, plot=plot, max_steps=300)
-        # if not self.reached_target:
-        #     print(colored('Grasped something!', color='green', attrs=['bold', 'blink']))
-        # else:
-        #     print(colored('Could not grasp anything!', color='red', attrs=['bold', 'blink']))
+        result = self.close_gripper(max_steps=300, **kwargs)
+
         if result == 'success':
             return False
         else:
@@ -325,7 +322,8 @@ class MJ_Controller(object):
 
 
 
-    def move_ee(self, ee_position, plot=False, marker=False, max_steps=10000, quiet=False, render=True):
+    def move_ee(self, ee_position, **kwargs):
+    # def move_ee(self, ee_position, plot=False, marker=False, max_steps=10000, quiet=False, render=True):
         """
         Moves the robot arm so that the gripper center ends up at the requested XYZ-position,
         with a vertical gripper position.
@@ -339,7 +337,8 @@ class MJ_Controller(object):
         """
         joint_angles = self.ik(ee_position)
         if joint_angles is not None:
-           result = self.move_group_to_joint_target(group='Arm', target=joint_angles, tolerance=0.05, plot=plot, marker=marker, max_steps=max_steps, quiet=quiet, render=render)
+           result = self.move_group_to_joint_target(group='Arm', target=joint_angles, tolerance=0.05, **kwargs)
+           # result = self.move_group_to_joint_target(group='Arm', target=joint_angles, tolerance=0.05, plot=plot, marker=marker, max_steps=max_steps, quiet=quiet, render=render)
         else:
             result = 'No valid joint angles received, could not move EE to position.'
         return result

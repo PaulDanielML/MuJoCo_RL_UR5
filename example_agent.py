@@ -20,7 +20,7 @@ for episode in range(1, N_EPISODES+1):
         print('#################################################################')
         action = env.action_space.sample()
         # action = [100,100]
-        observation, reward, done, _ = env.step(action, record_grasps=True)
+        observation, reward, done, _ = env.step(action, render=True, record_grasps=True)
         # observation, reward, done, _ = env.step(action, record_grasps=True, render=True)
 
 env.close()

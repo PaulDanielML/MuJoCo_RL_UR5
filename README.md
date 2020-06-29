@@ -1,7 +1,7 @@
 
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
-## Work in progress! Current grasping gym environment version: 1.0 <br/> Next TO-DOs: add multiple objects, respawn them at random positions when resetting the environment
+## Work in progress! Current grasping gym environment version: 1.0 <br/> Next TO-DOs: Implement simple DQN-agent for the environment.
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
@@ -77,6 +77,8 @@ The class *MJ_Controller* offers high and low level methods for controlling the 
 
 ## **Updates**
 
+**Image normalization:** Added script *normalize.py*, which samples 100 images from the environment and writes the mean values and standard deviations of all channels to a file. 
+
 **Reset shuffle:** Calling the environments *step* method now rearranges all the pickable objects to random positions on the table. 
 
 ![gif2](/media/gif_2.gif "Respawning")
@@ -93,7 +95,7 @@ The class *MJ_Controller* offers high and low level methods for controlling the 
 
 ![cloud](/media/point_cloud.png "Example point cloud")
 
-**Joint plots:** The methods *move_ee* and *move_group_to_joint_target* now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine which joints overshoot, oscillate etc. and adjust the controller gains based on that.  
+**Joint plots:** All methods that move joints now have an optional *plot* parameter. If set to True, a .png-file will be created in the local directory. It will show plots for each joint involved in the trajectory, containing the joint angles over time, as well as the target values. This can be used to determine which joints overshoot, oscillate etc. and adjust the controller gains based on that.  
 The tolerance used for the trajectory are plotted in red, so it can easily be determined how many steps each of the joints needs to reach a value within tolerance. 
 
 ![plot1](/media/plot_1.png "Example plot")
