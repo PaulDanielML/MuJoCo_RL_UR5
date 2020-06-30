@@ -6,3 +6,5 @@ __pycache__/
 Joint_values*
 Grasp*
 DQN.py
+*.pkl
+*_weights

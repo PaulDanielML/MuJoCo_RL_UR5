@@ -24,7 +24,7 @@ for i in range(100):
 
 print('Collected 100 images from the environment.')
 
-rgb_arr = np.array(rgb_list)
+rgb_arr = np.array(rgb_list) / 255
 depth_arr = np.array(depth_list)
 
 red = rgb_arr[:, :, :, 0].flatten()

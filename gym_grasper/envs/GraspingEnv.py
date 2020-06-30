@@ -37,7 +37,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.grasp_counter = 0
        
 
-    def step(self, action, render=False, record_grasps=False):
+    def step(self, action, render=False, record_grasps=True):
         """
         Lets the agent execute the action.
         Depending on the value set when calling mujoco_env.MujocoEnv.__init__(), one step of the agent will correspond to
@@ -234,7 +234,6 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         Gets called in the parent classes reset method.
         """
 
-      
         qpos = self.data.qpos
         qvel = self.data.qvel
 
