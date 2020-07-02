@@ -8,3 +8,5 @@ Grasp*
 DQN.py
 *.pkl
 *_weights
+*.pt
+runs/
