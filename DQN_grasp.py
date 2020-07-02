@@ -14,7 +14,7 @@ from collections import deque
 
 HEIGHT = 200
 WIDTH = 200
-N_EPISODES = 3000
+N_EPISODES = 200
 STEPS_PER_EPISODE = 50
 TARGET_NETWORK_UPDATE = 50
 MEMORY_SIZE = 1000
@@ -26,7 +26,13 @@ EPS_END = 0.05
 EPS_DECAY = 1500
 SAVE_WEIGHTS = True
 LOAD_WEIGHTS = False
-WEIGHT_PATH = './{}_{}_weights.pt'.format(HEIGHT, WIDTH)
+BUFFER = 'RBSTANDARD'
+ALGO = 'DQN'
+
+DESCRIPTION = '_'.join([ALGO, BUFFER, 'LR', str(LEARNING_RATE), 'H', str(HEIGHT), \
+                'W', str(WIDTH), 'STEPS', str(N_EPISODES*STEPS_PER_EPISODE)])
+
+WEIGHT_PATH = DESCRIPTION + '_weights.pt'
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -46,14 +52,15 @@ class DQN_Agent():
                 self.target_net.load_state_dict(torch.load(WEIGHT_PATH))
             print('Successfully loaded weights from {}.'.format(WEIGHT_PATH))
         self.memory = ReplayBuffer(MEMORY_SIZE)
-        self.learn_step_counter = 0
         self.means, self.stds = self.get_mean_std()
         self.normal = T.Compose([T.ToTensor(), T.Normalize(self.means, self.stds)])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=LEARNING_RATE)
         # self.optimizer = optim.RMSprop(self.policy_net.parameters())
         self.steps_done = 0
         self.eps_threshold = EPS_START
-        self.writer = SummaryWriter()
+        self.writer = SummaryWriter(comment=DESCRIPTION)
+        self.writer.add_graph(self.policy_net, torch.zeros(1, 3, self.WIDTH, self.HEIGHT).to(device))
+        self.writer.close()
         self.last_100_rewards = deque(maxlen=100)
         self.grasps = 0
 
@@ -73,13 +80,13 @@ class DQN_Agent():
 
 
     def transform_observation(self, observation):
-        # Transform observation to tensor
-        # obs_tensor = torch.from_numpy(observation['rgb']).float().to(device)
-        obs_tensor = observation['rgb']
-        # Rearrange to match Torch input format
-        # obs_tensor = obs_tensor.permute(2,0,1)
 
-        obs_tensor = self.normal(obs_tensor).float().to(device)
+        # For now: only use the rgb data of the observation
+        obs = observation['rgb']
+
+        # Apply transform, this rearanges dimensions, transforms into float tensor,
+        # scales values to range [0,1] and normalizes data, sends to gpu if available
+        obs_tensor = self.normal(obs).float().to(device)
         # Add batch dimension
         obs_tensor.unsqueeze_(0)
 
