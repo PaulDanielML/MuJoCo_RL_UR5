@@ -292,7 +292,7 @@ class MJ_Controller(object):
         Opens the gripper while keeping the arm in a steady position.
         """
 
-        result = self.move_group_to_joint_target(group='Gripper', target=[0.2, 0.2, 0.0, -0.1], marker=True, max_steps=1000, **kwargs)
+        result = self.move_group_to_joint_target(group='Gripper', target=[0.2, 0.2, 0.0, -0.1], max_steps=1000, **kwargs)
         return result
 
 
@@ -302,7 +302,7 @@ class MJ_Controller(object):
         Closes the gripper while keeping the arm in a steady position.
         """
 
-        result = self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, marker=True, **kwargs)
+        result = self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, **kwargs)
         # result = self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, max_steps=max_steps, render=render, marker=True, quiet=quiet, plot=plot)
         return result
 
@@ -337,7 +337,7 @@ class MJ_Controller(object):
         """
         joint_angles = self.ik(ee_position)
         if joint_angles is not None:
-           result = self.move_group_to_joint_target(group='Arm', target=joint_angles, tolerance=0.05, **kwargs)
+           result = self.move_group_to_joint_target(group='Arm', target=joint_angles, **kwargs)
            # result = self.move_group_to_joint_target(group='Arm', target=joint_angles, tolerance=0.05, plot=plot, marker=marker, max_steps=max_steps, quiet=quiet, render=render)
         else:
             result = 'No valid joint angles received, could not move EE to position.'
@@ -493,12 +493,11 @@ class MJ_Controller(object):
         """
 
         # print('Holding position!')
-        t = 0
-        while t < duration:
-            if t%10 == 0:
-                self.move_group_to_joint_target(max_steps=1, plot=False, quiet=True, render=render)
-            t += 1
-            time.sleep(0.001)
+        starting_time = time.time()
+        elapsed = 0
+        while elapsed < duration:
+            self.move_group_to_joint_target(max_steps=10, tolerance=0.0000001, plot=False, quiet=True, render=render)
+            elapsed = (time.time() - starting_time)*1000
         # print('Moving on...')
 
 

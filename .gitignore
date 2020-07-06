@@ -4,9 +4,10 @@ MUJOCO_LOG.TXT
 tester*
 __pycache__/
 Joint_values*
-Grasp*
+Grasp_*
 DQN.py
 *.pkl
 *_weights
 *.pt
 runs/
+demonstration.py
