@@ -228,8 +228,12 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         result3 = self.controller.move_ee([0.0, -0.6, 1.1], max_steps=1000, quiet=True, render=render, plot=False, marker=markers, tolerance=0.05)
         steps3 = self.controller.last_steps
 
+        result4 = self.controller.move_ee([0.6, 0.0, 1.1], max_steps=1000, quiet=True, render=render, plot=False, marker=markers, tolerance=0.01)
+        steps4 = self.controller.last_steps
 
-        result_final = self.controller.close_gripper(max_steps=500, render=render, quiet=True, marker=markers)
+        # self.controller.stay(500)
+
+        result_final = self.controller.close_gripper(max_steps=1000, render=render, quiet=True, marker=markers)
 
         if result_final == 'success':
             final_str = 'Nothing in the gripper'
@@ -244,22 +248,17 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             img_name = 'Grasp_{}.png'.format(self.grasp_counter)
             cv.imwrite(img_name, cv.cvtColor(capture_rgb, cv.COLOR_BGR2RGB))
 
-        result4 = self.controller.move_ee([0.6, 0.0, 1.1], max_steps=1000, quiet=True, render=render, plot=False, marker=markers, tolerance=0.01)
-        steps4 = self.controller.last_steps
-
-        self.controller.stay(500)
-
         result_open = self.controller.open_gripper(render=render, quiet=True)
         steps_open = self.controller.last_steps
 
         print('Results: ')
         print('Move to initial position: '.ljust(40, ' '), result1, ',', steps1, 'steps')
-        print('Open gripper: '.ljust(40, ' '), result_open, ',', steps_open, 'steps')
         print('Move to grasping position: '.ljust(40, ' '), result2, ',', steps2, 'steps')
         print('Grasped anything?: '.ljust(40, ' '), result_grasp)
         print('Move back to initial position: '.ljust(40, ' '), result3, ',', steps3, 'steps')
-        print('Final finger check: '.ljust(40, ' '), final_str)
         print('Move to drop position: '.ljust(40, ' '), result4, ',', steps4, 'steps')
+        print('Final finger check: '.ljust(40, ' '), final_str)
+        print('Open gripper: '.ljust(40, ' '), result_open, ',', steps_open, 'steps')
 
 
         if result1 == result2 == result3 == result4 == result_open == 'success':
@@ -338,6 +337,9 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.set_state(qpos, qvel)
 
         self.controller.set_group_joint_target(group='All', target= qpos[self.controller.actuated_joint_ids])
+
+        for _ in range(200):
+            self.sim.step()
 
         # return an observation image
         return self.get_observation(show=self.show_observations)
