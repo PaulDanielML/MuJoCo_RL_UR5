@@ -14,11 +14,12 @@ import pickle
 import random
 import math
 from collections import deque
+import time
 
 HEIGHT = 200
 WIDTH = 200
-N_EPISODES = 200
-STEPS_PER_EPISODE = 50
+N_EPISODES = 1000
+STEPS_PER_EPISODE = 10
 TARGET_NETWORK_UPDATE = 50
 MEMORY_SIZE = 1000
 BATCH_SIZE = 10
@@ -33,16 +34,19 @@ BUFFER = 'RBSTANDARD'
 # MODEL = 'CONV3_FC1'
 MODEL = 'RESNET'
 
+date = '_'.join([str(time.localtime()[1]), str(time.localtime()[2]), str(time.localtime()[0]), str(time.localtime()[3]), str(time.localtime()[4])])
+
+
 DESCRIPTION = '_'.join([MODEL, BUFFER, 'LR', str(LEARNING_RATE), 'H', str(HEIGHT), \
                 'W', str(WIDTH), 'STEPS', str(N_EPISODES*STEPS_PER_EPISODE)])
 
-WEIGHT_PATH = DESCRIPTION + '_weights.pt'
+WEIGHT_PATH = DESCRIPTION + date + '_weights.pt'
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Grasp_Agent():
-    def __init__(self, height=HEIGHT, width=WIDTH, mem_size=MEMORY_SIZE, eps_start=EPS_START, eps_end=EPS_END, eps_decay=EPS_DECAY, load_path=None):
+    def __init__(self, height=HEIGHT, width=WIDTH, mem_size=MEMORY_SIZE, eps_start=EPS_START, eps_end=EPS_END, eps_decay=EPS_DECAY, load_path=None, train=True):
         self.WIDTH = width
         self.HEIGHT = height
         self.output = self.WIDTH * self.HEIGHT
@@ -63,17 +67,17 @@ class Grasp_Agent():
             if GAMMA != 0.0:
                 self.target_net.load_state_dict(torch.load(WEIGHT_PATH))
             print('Successfully loaded weights from {}.'.format(WEIGHT_PATH))
-        self.memory = ReplayBuffer(mem_size)
         self.means, self.stds = self.get_mean_std()
         self.normal = T.Compose([T.ToTensor(), T.Normalize(self.means, self.stds)])
-        # self.optimizer = optim.Adam(self.policy_net.parameters(), lr=LEARNING_RATE)
-        self.optimizer = optim.SGD(self.policy_net.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=0.00002)
-        self.steps_done = 0
-        self.eps_threshold = EPS_START
-        self.writer = SummaryWriter(comment=DESCRIPTION)
-        self.writer.add_graph(self.policy_net, torch.zeros(1, 3, self.WIDTH, self.HEIGHT).to(device))
-        self.writer.close()
-        self.last_1000_rewards = deque(maxlen=1000)
+        if train:
+            self.memory = ReplayBuffer(mem_size)
+            self.optimizer = optim.SGD(self.policy_net.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=0.00002)
+            self.steps_done = 0
+            self.eps_threshold = EPS_START
+            self.writer = SummaryWriter(comment=DESCRIPTION)
+            self.writer.add_graph(self.policy_net, torch.zeros(1, 3, self.WIDTH, self.HEIGHT).to(device))
+            self.writer.close()
+            self.last_1000_rewards = deque(maxlen=1000)
 
 
     def epsilon_greedy(self, state):
@@ -95,7 +99,6 @@ class Grasp_Agent():
 
     def greedy(self, state):
         with torch.no_grad():
-            # For RESNET
             max_idx = self.policy_net(state).view(-1).max(0)[1]
             max_idx = max_idx.view(1)
             return max_idx.unsqueeze_(0)
@@ -223,5 +226,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
