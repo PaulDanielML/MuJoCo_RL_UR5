@@ -1,9 +1,12 @@
-
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
-## Work in progress! Current grasping gym environment version: 1.0 <br/> Next TO-DOs: Implement simple DQN-agent for the environment.
+## Work in progress! Current training setup iteration: IT3 <br> Next TO-DO: Use depth data from observations for training, let agent choose the grasping height
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
+
+![gif3](/media/gif_3.gif "Trained Agent")
+*An agent trained in IT3 for 10000 steps*
+
 
 This repository provides several python classes for control of robotic arms in MuJoCo: 
 
@@ -11,10 +14,10 @@ This repository provides several python classes for control of robotic arms in M
  Alternatively, its methods can also be used by any other class (like a Gym environment) to provide some more functionality. One example of this might be to move the robot back into a certain position after every episode of training, which might be preferable compared to just resetting all the joint angles and velocities. 
  The controller currently also holds the methods for image transformations, which might be put into another separate class at some point. 
 
-* **GraspEnv:** A Gym environment for training reinforcement learning agents. Currently a basic lifting task is implemented. 
+* **GraspEnv:** A Gym environment for training reinforcement learning agents. The task to master is a pick & place task. 
 The difference to most other MuJoCo Gym environments is that the observation returned is a camera image instead of a state vector of the simulation. This is meant to resemble a real world setup more closely. 
 
-The robot configuration used in this setup (Universal Robots UR5 + Robotiq S Model 3 Finger Gripper) is based on [this](http://www.mujoco.org/forum/index.php?resources/universal-robots-ur5-robotiq-s-model-3-finger-gripper.22/) resource.  
+The robot configuration used in this setup (Universal Robots UR5 + Robotiq S Model 3 Finger Gripper) is based on [this](http://www.mujoco.org/forum/index.php?resources/universal-robots-ur5-robotiq-s-model-3-finger-gripper.22/) resource.  It has since been heavily modified. Most current XML-file: *UR5gripper_2_finger.xml*
 The python bindings used come from [mujoco_py](https://github.com/openai/mujoco-py/tree/master/mujoco_py).  
 The PID controllers implemented are based on [simple_pid](https://github.com/m-lundberg/simple-pid).  
 A simple inverse kinematics solver for translating end-effector positions into joint angles has been implemented using [ikpy](https://github.com/Phylliade/ikpy).
@@ -47,13 +50,13 @@ This is all the setup required to use this repo.
 ### **GraspEnv - class:**
 
 The file [*example_agent.py*](example_agent.py) demonstrates the use of a random agent for this environment.
+The file [*Grasping_Agent.py*](Grasping_Agent.py) gives an example of training a shortsighted DQN-agent in the environment to predict pixel-wise grasping success (PyTorch).
 The created environment has an associated controller object, which provides all the functionality of the *MJ_Controller* - class to it. 
 * **Action space**: Pixel space, can be specified by setting height and width. Current defaults: 200x200. This means there are 40.000 possible actions. This resolution translates to a picking accuracy of ~ 4mm.
 * **State space**: The states / observations provided are dictionaries containing two arrays: An RGB-image and a depth-image, both of the same resolution as the action space
-* **Reward function**: Currently the environment can yield three different rewards: 
-    * -10 if a pixel is chosen that is outside certain limits (on the floor or the robot itself).
-    * 0 for choosing a pixel within the reachable space of the robot that does not lead to a successful grasp.
-    * +100 for choosing a pixel that leads to a successful grasp.
+* **Reward function**: The environment has been updated to a binary reward structure:
+    * 0 for choosing a pixel that does not lead to a successful grasp.
+    * +1 for choosing a pixel that leads to a successful grasp.
 
 The user gets a summary of each step performed in the console. It is recommended to train agents without rendering, as this will speed up training significantly. 
     
@@ -76,6 +79,8 @@ The class *MJ_Controller* offers high and low level methods for controlling the 
 ![gif1](/media/gif_1.gif "Simple Grasp and Toss")
 
 ## **Updates**
+**New gripper model available:** A new, less bulky, 2-finger gripper was implemented in the model in training setup iteration 3. 
+![new_gripper](/media/new_gripper.png "new gripper")
 
 **Image normalization:** Added script *normalize.py*, which samples 100 images from the environment and writes the mean values and standard deviations of all channels to a file. 
 

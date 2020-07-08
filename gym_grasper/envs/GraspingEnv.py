@@ -19,7 +19,7 @@ from termcolor import colored
 
 
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
-    def __init__(self, file='/UR5+gripper/UR5gripper_2_finger.xml', image_width=200, image_height=200, show_obs=True):
+    def __init__(self, file='/UR5+gripper/UR5gripper_2_finger.xml', image_width=200, image_height=200, show_obs=True, demo=False):
         self.initialized = False
         self.IMAGE_WIDTH = image_width
         self.IMAGE_HEIGHT = image_height
@@ -36,6 +36,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.initialized = True
         self.grasp_counter = 0
         self.show_observations = show_obs
+        self.demo_mode = demo
        
 
     def step(self, action, render=False, record_grasps=False, markers=False):
@@ -184,47 +185,49 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         # self.controller.stay(500)
 
-        result_final = self.controller.close_gripper(max_steps=1000, render=render, quiet=True, marker=markers, plot=plot)
+        if not self.demo_mode:
+            result_final = self.controller.close_gripper(max_steps=1000, render=render, quiet=True, marker=markers, plot=plot)
 
-        if result_final == 'success':
-            final_str = 'Nothing in the gripper'
-        else:
-            final_str = 'Object in the gripper'
+            if result_final == 'success':
+                final_str = 'Nothing in the gripper'
+            else:
+                final_str = 'Object in the gripper'
 
-        grasped_something = result_final[:3] == 'max' and result_grasp
+            grasped_something = result_final[:3] == 'max' and result_grasp
 
-        if grasped_something and record_grasps:
-            capture_rgb, depth = self.controller.get_image_data(width=1000, height=1000, camera='side')
-            self.grasp_counter += 1
-            img_name = 'Grasp_{}.png'.format(self.grasp_counter)
-            cv.imwrite(img_name, cv.cvtColor(capture_rgb, cv.COLOR_BGR2RGB))
+            if grasped_something and record_grasps:
+                capture_rgb, depth = self.controller.get_image_data(width=1000, height=1000, camera='side')
+                self.grasp_counter += 1
+                img_name = 'Grasp_{}.png'.format(self.grasp_counter)
+                cv.imwrite(img_name, cv.cvtColor(capture_rgb, cv.COLOR_BGR2RGB))
 
         result_open = self.controller.open_gripper(render=render, quiet=True, plot=plot)
         steps_open = self.controller.last_steps
 
         self.controller.actuators[0][4].Kp = 20.0
 
-        print('Results: ')
-        print('Move to pre grasp position: '.ljust(40, ' '), result_pre, ',', steps1, 'steps')
-        print('Move to grasping position: '.ljust(40, ' '), result2, ',', steps2, 'steps')
-        print('Grasped anything?: '.ljust(40, ' '), result_grasp)
-        print('Move to center: '.ljust(40, ' '), result3, ',', steps3, 'steps')
-        print('Move to drop position: '.ljust(40, ' '), result4, ',', steps4, 'steps')
-        print('Final finger check: '.ljust(40, ' '), final_str)
-        print('Open gripper: '.ljust(40, ' '), result_open, ',', steps_open, 'steps')
+        if not self.demo_mode:
+            print('Results: ')
+            print('Move to pre grasp position: '.ljust(40, ' '), result_pre, ',', steps1, 'steps')
+            print('Move to grasping position: '.ljust(40, ' '), result2, ',', steps2, 'steps')
+            print('Grasped anything?: '.ljust(40, ' '), result_grasp)
+            print('Move to center: '.ljust(40, ' '), result3, ',', steps3, 'steps')
+            print('Move to drop position: '.ljust(40, ' '), result4, ',', steps4, 'steps')
+            print('Final finger check: '.ljust(40, ' '), final_str)
+            print('Open gripper: '.ljust(40, ' '), result_open, ',', steps_open, 'steps')
 
 
-        if result1 == result2 == result3 == result4 == result_open == 'success':
-            print(colored('Executed all movements successfully.', color='green', attrs=['bold']))
-        else:
-            print(colored('Could not execute all movements successfully.', color='red', attrs=['bold']))
+            if result1 == result2 == result3 == result4 == result_open == 'success':
+                print(colored('Executed all movements successfully.', color='green', attrs=['bold']))
+            else:
+                print(colored('Could not execute all movements successfully.', color='red', attrs=['bold']))
 
-        if grasped_something:
-            print(colored('Successful grasp!', color='green', attrs=['bold'])) 
-            return True         
-        else:
-            print(colored('Did not grasp anything.', color='red', attrs=['bold']))
-            return False   
+            if grasped_something:
+                print(colored('Successful grasp!', color='green', attrs=['bold'])) 
+                return True         
+            else:
+                print(colored('Did not grasp anything.', color='red', attrs=['bold']))
+                return False   
 
 
 
@@ -291,6 +294,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         self.controller.set_group_joint_target(group='All', target= qpos[self.controller.actuated_joint_ids])
 
+        # Turn this on for training, so the objects drop down before the observation
+        self.controller.stay(100, render=False)
         # return an observation image
         return self.get_observation(show=self.show_observations)
 

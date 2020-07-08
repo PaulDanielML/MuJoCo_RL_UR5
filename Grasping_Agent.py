@@ -21,7 +21,7 @@ WIDTH = 200
 N_EPISODES = 1000
 STEPS_PER_EPISODE = 10
 TARGET_NETWORK_UPDATE = 50
-MEMORY_SIZE = 1000
+MEMORY_SIZE = 900
 BATCH_SIZE = 10
 GAMMA = 0.0
 LEARNING_RATE = 0.001
@@ -40,7 +40,7 @@ date = '_'.join([str(time.localtime()[1]), str(time.localtime()[2]), str(time.lo
 DESCRIPTION = '_'.join([MODEL, BUFFER, 'LR', str(LEARNING_RATE), 'H', str(HEIGHT), \
                 'W', str(WIDTH), 'STEPS', str(N_EPISODES*STEPS_PER_EPISODE)])
 
-WEIGHT_PATH = DESCRIPTION + date + '_weights.pt'
+WEIGHT_PATH = DESCRIPTION + '_' + date + '_weights.pt'
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
