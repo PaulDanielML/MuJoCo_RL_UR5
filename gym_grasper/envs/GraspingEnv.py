@@ -260,32 +260,32 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         n_boxes = 3
         n_balls = 3
 
-        for j in ['x', 'y', 'z']:
-        # for j in ['rot', 'x', 'y', 'z']:
+        for j in ['rot', 'x', 'y', 'z']:
             for i in range(1,n_boxes+1):
                 joint_name = 'box_' + str(i) + '_' + j
-                joint_id = self.model.joint_name2id(joint_name)
-
+                q_adr = self.model.get_joint_qpos_addr(joint_name)
                 if j == 'x':
-                    qpos[joint_id] = np.random.uniform(low=-0.25, high=0.25)
+                    qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
                 elif j == 'y':
-                    qpos[joint_id] = np.random.uniform(low=-0.17, high=0.17)
+                    qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
                 elif j == 'z':
-                    qpos[joint_id] = 0.0
+                    qpos[q_adr] = 0.0
                 elif j == 'rot':
-                    qpos[joint_id] = 0
+                    start, end = q_adr
+                    qpos[start:end] = [1., 0., 0., 0.]
 
             for i in range(1,n_balls+1):
                 joint_name = 'ball_' + str(i) + '_' + j
-                joint_id = self.model.joint_name2id(joint_name)
+                q_adr = self.model.get_joint_qpos_addr(joint_name)
                 if j == 'x':
-                    qpos[joint_id] = np.random.uniform(low=-0.25, high=0.25)
+                    qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
                 elif j == 'y':
-                    qpos[joint_id] = np.random.uniform(low=-0.17, high=0.17)
+                    qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
                 elif j == 'z':
-                    qpos[joint_id] = 0.0
+                    qpos[q_adr] = 0.0
                 elif j == 'rot':
-                    qpos[joint_id] = 0
+                    start, end = q_adr
+                    qpos[start:end] = [1., 0., 0., 0.]
 
         self.set_state(qpos, qvel)
 

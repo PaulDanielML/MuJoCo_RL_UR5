@@ -430,8 +430,11 @@ class MJ_Controller(object):
         print('\n################################################')
         print('CURRENT JOINT POSITIONS (ALL)')
         print('################################################')
-        for i in range(self.model.njnt):
-            print('Current angle for joint {}: {}'.format(self.model.joint_id2name(i), self.sim.data.qpos[i]))
+        for i in range(len(self.model.jnt_qposadr)):
+        # for i in range(self.model.njnt):
+            name = self.model.joint_id2name(i)
+            print('Current angle for joint {}: {}'.format(name, self.sim.data.get_joint_qpos(name)))
+            # print('Current angle for joint {}: {}'.format(self.model.joint_id2name(i), self.sim.data.qpos[i]))
 
         print('\n################################################')
         print('CURRENT BODY POSITIONS')
@@ -457,18 +460,6 @@ class MJ_Controller(object):
         for i in range(len(self.sim.data.ctrl)):
             print('Current activation of actuator {}: {}'.format(self.actuators[i][1], self.sim.data.ctrl[i]))
 
-
-    def detect_collisions(self):
-        """
-        TODO
-        """
-        all_contacts = self.sim.data.contact
-        collisions = [cont for cont in all_contacts if cont.dist < 0.0]
-        # for coll in collisions:
-            # print(self.model.body_id2name(coll.geom1))
-            # print(self.model.body_id2name(coll.geom2))
-        # print('\n', self.sim.data.ncon)
-        # print(all_contacts[0].includemargin)
 
 
     def toss_it_from_the_ellbow(self):
