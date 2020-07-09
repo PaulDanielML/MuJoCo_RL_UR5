@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
-from Modules import ReplayBuffer, Transition
+from Modules import ReplayBuffer, Transition, simple_Transition
 from termcolor import colored
 import numpy as np
 import pickle
@@ -71,12 +71,15 @@ class Grasp_Agent():
         self.normal_rgb = T.Compose([T.ToTensor(), T.Normalize(self.means[0:3], self.stds[0:3])])
         self.normal_depth = T.Normalize(self.means[3], self.stds[3])
         if train:
-            self.memory = ReplayBuffer(mem_size)
+            if GAMMA == 0.0:
+                self.memory = ReplayBuffer(mem_size, simple=True)
+            else:
+                self.memory = ReplayBuffer(mem_size)
             self.optimizer = optim.SGD(self.policy_net.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=0.00002)
             self.steps_done = 0
             self.eps_threshold = EPS_START
             self.writer = SummaryWriter(comment=DESCRIPTION)
-            self.writer.add_graph(self.policy_net, torch.zeros(1, 3, self.WIDTH, self.HEIGHT).to(device))
+            self.writer.add_graph(self.policy_net, torch.zeros(1, 4, self.WIDTH, self.HEIGHT).to(device))
             self.writer.close()
             self.last_1000_rewards = deque(maxlen=1000)
 
@@ -152,7 +155,6 @@ class Grasp_Agent():
             raw = file.read()
             values = pickle.loads(raw)
 
-        print(values)
         return values[0:4], values[4:8]
 
 
@@ -171,11 +173,15 @@ class Grasp_Agent():
         # Sample the replay buffer
         transitions = self.memory.sample(BATCH_SIZE)
         # Transpose the batch for easier access (see https://stackoverflow.com/a/19343/3343043)
-        batch = Transition(*zip(*transitions))
+        if GAMMA == 0.0:
+            batch = simple_Transition(*zip(*transitions))
+        else:
+            batch = Transition(*zip(*transitions))
 
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
-        next_state_batch = torch.cat(batch.next_state)
+        if GAMMA != 0.0:
+            next_state_batch = torch.cat(batch.next_state)
         reward_batch = torch.cat(batch.reward)
 
         # Current Q prediction of our policy net, for the actions we took
@@ -234,8 +240,10 @@ def main():
             agent.update_tensorboard(reward)
             reward = torch.tensor([[reward]], device=device)
             next_state = agent.transform_observation(next_state)
-            agent.memory.push(state, action, next_state, reward)
-
+            if GAMMA == 0.0:
+                agent.memory.push(state, action, reward)
+            else:
+                agent.memory.push(state, action, next_state, reward)
 
             state = next_state
 

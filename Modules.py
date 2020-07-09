@@ -10,6 +10,8 @@ import time
 
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
+simple_Transition = namedtuple('simple_Transition', ('state', 'action', 'reward'))
+
 def Transform_Image(means, stds):
 	return T.Compose([T.ToTensor(), T.Normalize(means, stds)])
 
@@ -22,16 +24,20 @@ def get_mean_std():
 
 
 class ReplayBuffer(object):
-	def __init__(self, size):
+	def __init__(self, size, simple=False):
 		self.size = size
 		self.memory = []
 		self.position = 0
+		self.simple = simple
 
 
 	def push(self, *args):
 		if len(self.memory) < self.size:
 			self.memory.append(None)
-		self.memory[self.position] = Transition(*args)
+		if self.simple:
+			self.memory[self.position] = simple_Transition(*args)
+		else:
+			self.memory[self.position] = Transition(*args)
 		# If replay buffer is full, we start overwriting the first entries
 		self.position = (self.position + 1) % self.size
 
