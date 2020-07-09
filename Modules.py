@@ -135,7 +135,7 @@ def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
 class Perception_Module(nn.Module):
 	def __init__(self):
 		super(Perception_Module, self).__init__()
-		self.C1 = conv3x3(3, 64)
+		self.C1 = conv3x3(4, 64)
 		self.MP1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 		self.RB1 = BasicBlock(64, 128)
 		self.MP2 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -230,21 +230,5 @@ def count_parameters(model):
 if __name__ == '__main__':
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-	vision_module = Perception_Module()
-	grasping_module = Grasping_Module()
-	test_input = torch.ones(5,3,200,200).to(device)
-
-	# old = CONV3_FC1(200, 200, 40000).to(device)
-
-	resnet = RESNET().to(device)
-
-	with torch.no_grad():
-		out = resnet(test_input)
-
-	# out = old(test_input)
-
+	resnet = RESNET()
 	count_parameters(resnet)
-
-	time.sleep(10)
-
-	print(out.size())

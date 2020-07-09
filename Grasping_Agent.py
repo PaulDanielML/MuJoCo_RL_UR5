@@ -68,7 +68,8 @@ class Grasp_Agent():
                 self.target_net.load_state_dict(torch.load(WEIGHT_PATH))
             print('Successfully loaded weights from {}.'.format(WEIGHT_PATH))
         self.means, self.stds = self.get_mean_std()
-        self.normal = T.Compose([T.ToTensor(), T.Normalize(self.means, self.stds)])
+        self.normal_rgb = T.Compose([T.ToTensor(), T.Normalize(self.means[0:3], self.stds[0:3])])
+        self.normal_depth = T.Normalize(self.means[3], self.stds[3])
         if train:
             self.memory = ReplayBuffer(mem_size)
             self.optimizer = optim.SGD(self.policy_net.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=0.00002)
@@ -99,19 +100,43 @@ class Grasp_Agent():
 
     def greedy(self, state):
         with torch.no_grad():
-            max_idx = self.policy_net(state).view(-1).max(0)[1]
-            max_idx = max_idx.view(1)
-            return max_idx.unsqueeze_(0)
+            max_o = self.policy_net(state).view(-1).max(0)
+            max_idx = max_o[1]
+            max_value = max_o[0]
+            # max_idx = self.policy_net(state).view(-1).max(0)[1]
+            # max_idx = max_idx.view(1)
+            # return max_idx.unsqueeze_(0)
+            return max_idx.item(), max_value.item()
 
 
     def transform_observation(self, observation):
 
-        # For now: only use the rgb data of the observation
+        rgb = observation['rgb']
+        depth = observation['depth']
+        depth = np.expand_dims(depth, 0)
+        # Apply transform, this rearanges dimensions, transforms into float tensor,
+        # scales values to range [0,1] and normalizes data, sends to gpu if available
+        rgb_tensor = self.normal_rgb(rgb).float()
+        depth_tensor = torch.tensor(depth).float()
+        depth_tensor = self.normal_depth(depth_tensor)
+        
+        obs_tensor = torch.cat((rgb_tensor, depth_tensor), dim=0).to(device)
+
+        # Add batch dimension
+        obs_tensor.unsqueeze_(0)
+        del rgb, depth, rgb_tensor, depth_tensor
+
+        return obs_tensor
+
+
+    def transform_observation_rgb_only(self, observation):
+        """If only the rgb part of the observation is to be used."""
+
         obs = observation['rgb']
 
         # Apply transform, this rearanges dimensions, transforms into float tensor,
         # scales values to range [0,1] and normalizes data, sends to gpu if available
-        obs_tensor = self.normal(obs).float().to(device)
+        obs_tensor = self.normal_rgb(obs).float().to(device)
         # Add batch dimension
         obs_tensor.unsqueeze_(0)
 
@@ -120,14 +145,15 @@ class Grasp_Agent():
 
     def get_mean_std(self):
         """
-        Reads and returns the mean and standard deviation values creates by 'normalize.py'. Currently only rgb values are returned.
+        Reads and returns the mean and standard deviation values creates by 'normalize.py'.
         """
 
         with open('mean_and_std', 'rb') as file:
             raw = file.read()
             values = pickle.loads(raw)
 
-        return values[0:3], values[3:6]
+        print(values)
+        return values[0:4], values[4:8]
 
 
     def learn(self):

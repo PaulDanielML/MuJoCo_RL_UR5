@@ -37,6 +37,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.grasp_counter = 0
         self.show_observations = show_obs
         self.demo_mode = demo
+        self.TABLE_HEIGHT = 0.89
        
 
     def step(self, action, render=False, record_grasps=False, markers=False):
@@ -76,7 +77,10 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 x = action[0]
                 y = action[1]
 
-            coordinates = self.controller.pixel_2_world(pixel_x=x, pixel_y=y, depth=self.current_observation['depth'][y][x], height=self.IMAGE_HEIGHT, width=self.IMAGE_WIDTH)
+            # Depth value for the pixel corresponding to the action
+            depth = self.current_observation['depth'][y][x]
+
+            coordinates = self.controller.pixel_2_world(pixel_x=x, pixel_y=y, depth=depth, height=self.IMAGE_HEIGHT, width=self.IMAGE_WIDTH)
 
             print(colored('Action: Pixel X: {}, Pixel Y: {}'.format(x, y), color='blue', attrs=['bold']))
             print(colored('Transformed into world coordinates: {}'.format(coordinates), color='blue', attrs=['bold']))
@@ -163,8 +167,10 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         # Move to grasping height
         coordinates_2 = copy.deepcopy(coordinates)
-        coordinates_2[2] = 0.91
-        # coordinates_2[2] = 0.895
+        grasp_height = (coordinates_2[2] + self.TABLE_HEIGHT) / 2
+        grasp_height = np.round(grasp_height, decimals=3)
+        coordinates_2[2] = grasp_height
+        # coordinates_2[2] = 0.91
 
         result2 = self.controller.move_ee(coordinates_2, max_steps=1000, quiet=True, render=render, marker=markers, tolerance=0.01, plot=plot)
         steps2 = self.controller.last_steps
@@ -240,7 +246,6 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         """
 
         rgb, depth = self.controller.get_image_data(width=self.IMAGE_WIDTH, height=self.IMAGE_HEIGHT, show=show)
-        # rgb, depth = self.controller.get_image_data(width=self.IMAGE_WIDTH, height=self.IMAGE_HEIGHT, show=show)
         depth = self.controller.depth_2_meters(depth)
         observation = defaultdict()
         observation['rgb'] = rgb
