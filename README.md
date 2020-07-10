@@ -11,14 +11,12 @@ Trained agent in action            |  Example of predicted grasp chances
 ![](/media/gif_3.gif "Trained Agent")  |  ![](/media/overlay.png "Overlay")
 
 
-Setup iteration            |  Relevant new features 
+Setup iteration            |  Relevant changes 
 :-------------------------:|:-------------------------:
-  IT1 | asldfkj
-       lasjdf 
-  IT2 | asdfasdf
-  	  | asdlf
-  IT3 |
-  IT4 |
+  IT1 (Baseline)|- Grasp success check after moving straight up (500 steps of trying to close the gripper) <br> - Fixed z-coordinate for grasping <br> - Objects of equal size
+  IT2 | - Grasp success check now after moving to drop location (1000 steps)
+  IT3 | - New two-finger gripper implemented 
+  IT4 | - Z-coordinate for grasping now calculated using depth data <br> - Objects now vary in size
 
 
 This repository provides several python classes for control of robotic arms in MuJoCo: 
