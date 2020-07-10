@@ -1,11 +1,17 @@
+
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
 ## Work in progress! Current training setup iteration: IT3 <br> Next TO-DO: Use depth data from observations for training, let agent choose the grasping height
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
-![gif3](/media/gif_3.gif "Trained Agent")
-*An agent trained in IT3 for 10000 steps*
+
+Trained agent in action            |  Example of predicted grasp chances 
+:---------------------------------:|:-------------------------:
+![](/media/gif_3.gif "Trained Agent")  |  ![](/media/overlay.png "Overlay")
+
+
+
 
 
 This repository provides several python classes for control of robotic arms in MuJoCo: 
@@ -80,6 +86,7 @@ The class *MJ_Controller* offers high and low level methods for controlling the 
 
 ## **Updates**
 **New gripper model available:** A new, less bulky, 2-finger gripper was implemented in the model in training setup iteration 3. 
+
 ![new_gripper](/media/new_gripper.png "new gripper")
 
 **Image normalization:** Added script *normalize.py*, which samples 100 images from the environment and writes the mean values and standard deviations of all channels to a file. 
