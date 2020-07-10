@@ -18,8 +18,8 @@ import time
 
 HEIGHT = 200
 WIDTH = 200
-N_EPISODES = 1000
-STEPS_PER_EPISODE = 10
+N_EPISODES = 2000
+STEPS_PER_EPISODE = 5
 TARGET_NETWORK_UPDATE = 50
 MEMORY_SIZE = 900
 BATCH_SIZE = 10
@@ -216,8 +216,8 @@ class Grasp_Agent():
             last_100 = np.array([self.last_1000_rewards[i] for i in range(-100,0)])
             mean_reward_100 = np.mean(last_100)
             self.writer.add_scalar('Mean reward/Last100', mean_reward_100, global_step=self.steps_done)
-            grasps_in_last_100 = np.count_nonzero(last_100 == 1)
-            self.writer.add_scalar('Number of succ. grasps in last 100 steps', grasps_in_last_100, global_step=self.steps_done)
+            # grasps_in_last_100 = np.count_nonzero(last_100 == 1)
+            # self.writer.add_scalar('Number of succ. grasps in last 100 steps', grasps_in_last_100, global_step=self.steps_done)
         if len(self.last_1000_rewards) > 999:
             mean_reward_1000 = np.mean(self.last_1000_rewards)
             self.writer.add_scalar('Mean reward/Last1000', mean_reward_1000, global_step=self.steps_done)
