@@ -210,6 +210,9 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         result_open = self.controller.open_gripper(render=render, quiet=True, plot=plot)
         steps_open = self.controller.last_steps
 
+        if self.demo_mode:
+            self.controller.stay(200)
+
         self.controller.actuators[0][4].Kp = 20.0
 
         if not self.demo_mode:

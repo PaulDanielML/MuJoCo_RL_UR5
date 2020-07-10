@@ -1,7 +1,7 @@
 
 # MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
 
-## Work in progress! Current training setup iteration: IT3 <br> Next TO-DO: Use depth data from observations for training, let agent choose the grasping height
+## Work in progress! Current training setup iteration: IT4 <br> Next TO-DO: Increase number of objects, pile them on top of each other
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
@@ -23,7 +23,7 @@ This repository provides several python classes for control of robotic arms in M
 * **GraspEnv:** A Gym environment for training reinforcement learning agents. The task to master is a pick & place task. 
 The difference to most other MuJoCo Gym environments is that the observation returned is a camera image instead of a state vector of the simulation. This is meant to resemble a real world setup more closely. 
 
-The robot configuration used in this setup (Universal Robots UR5 + Robotiq S Model 3 Finger Gripper) is based on [this](http://www.mujoco.org/forum/index.php?resources/universal-robots-ur5-robotiq-s-model-3-finger-gripper.22/) resource.  It has since been heavily modified. Most current XML-file: *UR5gripper_2_finger.xml*
+The robot configuration used in this setup (Universal Robots UR5 + Robotiq S Model 3 Finger Gripper) is based on [this](http://www.mujoco.org/forum/index.php?resources/universal-robots-ur5-robotiq-s-model-3-finger-gripper.22/) resource.  It has since been heavily modified. Most current XML-file: *UR5gripper_2_finger.xml*  
 The python bindings used come from [mujoco_py](https://github.com/openai/mujoco-py/tree/master/mujoco_py).  
 The PID controllers implemented are based on [simple_pid](https://github.com/m-lundberg/simple-pid).  
 A simple inverse kinematics solver for translating end-effector positions into joint angles has been implemented using [ikpy](https://github.com/Phylliade/ikpy).
