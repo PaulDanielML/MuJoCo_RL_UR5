@@ -11,7 +11,14 @@ Trained agent in action            |  Example of predicted grasp chances
 ![](/media/gif_3.gif "Trained Agent")  |  ![](/media/overlay.png "Overlay")
 
 
-
+Setup iteration            |  Relevant new features 
+:-------------------------:|:-------------------------:
+  IT1 | asldfkj
+       lasjdf 
+  IT2 | asdfasdf
+  	  | asdlf
+  IT3 |
+  IT4 |
 
 
 This repository provides several python classes for control of robotic arms in MuJoCo: 
