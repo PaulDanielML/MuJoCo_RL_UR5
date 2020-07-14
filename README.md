@@ -1,5 +1,4 @@
-
-# MuJoCo Simulation Setup of a UR5 robot arm for Reinforcement Learning 
+# Deep Reinforcement Learning for robotic pick and place applications using purely visual observations 
 
 ## Work in progress! Current training setup iteration: IT4 <br> Next TO-DO: Increase number of objects, pile them on top of each other
 
@@ -60,7 +59,8 @@ This is all the setup required to use this repo.
 
 ### **GraspEnv - class:**
 
-The file [*example_agent.py*](example_agent.py) demonstrates the use of a random agent for this environment.
+Gym-environment for training agents to use RGB-D data for predicting pixel-wise grasp success chances.  
+The file [*example_agent.py*](example_agent.py) demonstrates the use of a random agent for this environment.  
 The file [*Grasping_Agent.py*](Grasping_Agent.py) gives an example of training a shortsighted DQN-agent in the environment to predict pixel-wise grasping success (PyTorch).
 The created environment has an associated controller object, which provides all the functionality of the *MJ_Controller* - class to it. 
 * **Action space**: Pixel space, can be specified by setting height and width. Current defaults: 200x200. This means there are 40.000 possible actions. This resolution translates to a picking accuracy of ~ 4mm.

@@ -183,6 +183,7 @@ class MJ_Controller(object):
             print(e)
             print('Could not actuate requested joint group.')
 
+
     def move_group_to_joint_target(self, group='All', target=None, tolerance=0.1, max_steps=10000, plot=False, marker=False, render=True, quiet=False):
         """
         Moves the specified joint group to a joint target.
@@ -327,9 +328,7 @@ class MJ_Controller(object):
             return True
 
 
-
     def move_ee(self, ee_position, **kwargs):
-    # def move_ee(self, ee_position, plot=False, marker=False, max_steps=10000, quiet=False, render=True):
         """
         Moves the robot arm so that the gripper center ends up at the requested XYZ-position,
         with a vertical gripper position.
