@@ -1,0 +1,172 @@
+<mujoco>    
+    <body name="object_0" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_0" />
+        <geom name="body_0" pos="0 0 0" rgba="0.3 0.9 0.2 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_1" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_1" />
+        <geom name="body_1" pos="0 0 0" rgba="0.0 0.1 0.5 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_2" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_2" />
+        <geom name="body_2" pos="0 0 0" rgba="0.1 0.1 0.0 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_3" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_3" />
+        <geom name="body_3" pos="0 0 0" rgba="0.2 0.1 0.5 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_4" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_4" />
+        <geom name="body_4" pos="0 0 0" rgba="0.3 0.1 0.5 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_5" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_5" />
+        <geom name="body_5" pos="0 0 0" rgba="0.4 0.1 0.8 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_6" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_6" />
+        <geom name="body_6" pos="0 0 0" rgba="0.5 0.1 0.5 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_7" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_7" />
+        <geom name="body_7" pos="0 0 0" rgba="0.6 0.1 0.5 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_8" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_8" />
+        <geom name="body_8" pos="0 0 0" rgba="0.7 0.1 0.2 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_9" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_9" />
+        <geom name="body_9" pos="0 0 0" rgba="0.7 0.8 0.2 1" size="0.025" type="sphere" />
+    </body>
+    <body name="object_10" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_10" />
+        <geom name="body_10" pos="0 0 0" rgba="0.3 0.9 0.2 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_11" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_11" />
+        <geom name="body_11" pos="0 0 0" rgba="0.0 0.1 0.5 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_12" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_12" />
+        <geom name="body_12" pos="0 0 0" rgba="0.1 0.1 0.0 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_13" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_13" />
+        <geom name="body_13" pos="0 0 0" rgba="0.2 0.1 0.5 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_14" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_14" />
+        <geom name="body_14" pos="0 0 0" rgba="0.3 0.1 0.5 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_15" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_15" />
+        <geom name="body_15" pos="0 0 0" rgba="0.4 0.1 0.8 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_16" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_16" />
+        <geom name="body_16" pos="0 0 0" rgba="0.5 0.1 0.5 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_17" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_17" />
+        <geom name="body_17" pos="0 0 0" rgba="0.6 0.1 0.5 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_18" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_18" />
+        <geom name="body_18" pos="0 0 0" rgba="0.7 0.1 0.2 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_19" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_19" />
+        <geom name="body_19" pos="0 0 0" rgba="0.7 0.8 0.2 1" size="0.025 0.025 0.025" type="box" />
+        <!-- <inertial pos="0 0 0" mass="0.5" diaginertia="0.0001 0.0001 0.0001" /> -->
+    </body>
+    <body name="object_20" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_20" />
+        <geom name="body_20" pos="0 0 0" rgba="0.3 0.9 0.2 1" size="0.025 0.05" type="cylinder" />
+    </body>
+    <body name="object_21" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_21" />
+        <geom name="body_21" pos="0 0 0" rgba="0.0 0.1 0.5 1" size="0.025 0.04" type="cylinder" />
+    </body>
+    <body name="object_22" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_22" />
+        <geom name="body_22" pos="0 0 0" rgba="0.1 0.1 0.0 1" size="0.015 0.05" type="cylinder" />
+    </body>
+    <body name="object_23" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_23" />
+        <geom name="body_23" pos="0 0 0" rgba="0.2 0.1 0.5 1" size="0.02 0.05" type="cylinder" />
+    </body>
+    <body name="object_24" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_24" />
+        <geom name="body_24" pos="0 0 0" rgba="0.0 0.8 0.0 1" size="0.02 0.05" type="cylinder" />
+    </body>
+    <body name="object_25" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_25" />
+        <geom name="body_25" pos="0 0 0" rgba="0.4 0.1 0.8 1" size="0.02 0.05" type="cylinder" />
+    </body>
+    <body name="object_26" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_26" />
+        <geom name="body_26" pos="0 0 0" rgba="0.5 0.1 0.5 1" size="0.025 0.035" type="cylinder" />
+    </body>
+    <body name="object_27" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_27" />
+        <geom name="body_27" pos="0 0 0" rgba="0.2 0.1 0.5 1" size="0.025 0.04" type="cylinder" />
+    </body>
+    <body name="object_28" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_28" />
+        <geom name="body_28" pos="0 0 0" rgba="0.7 0.1 0.2 1" size="0.025 0.045" type="cylinder" />
+    </body>
+    <body name="object_29" pos=".0 -.6 0.95">
+        <joint type="free" damping="0.007" name="free_joint_29" />
+        <geom name="body_29" pos="0 0 0" rgba="0.7 0.8 0.9 1" size="0.025 0.05" type="cylinder" />
+    </body>
+    <body name="object_30" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_30" />
+        <geom name="body_30" pos="0 0 0" rgba="0.3 0.9 0.2 1" size="0.025 0.05" type="capsule" />
+    </body>
+    <body name="object_31" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_31" />
+        <geom name="body_31" pos="0 0 0" rgba="0.0 0.1 0.5 1" size="0.025 0.04" type="capsule" />
+    </body>
+    <body name="object_32" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_32" />
+        <geom name="body_32" pos="0 0 0" rgba="0.1 0.1 0.0 1" size="0.015 0.05" type="capsule" />
+    </body>
+    <body name="object_33" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_33" />
+        <geom name="body_33" pos="0 0 0" rgba="0.2 0.1 0.5 1" size="0.02 0.05" type="capsule" />
+    </body>
+    <body name="object_34" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_34" />
+        <geom name="body_34" pos="0 0 0" rgba="0.0 0.8 0.0 1" size="0.02 0.05" type="capsule" />
+    </body>
+    <body name="object_35" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_35" />
+        <geom name="body_35" pos="0 0 0" rgba="0.4 0.1 0.8 1" size="0.02 0.05" type="capsule" />
+    </body>
+    <body name="object_36" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_36" />
+        <geom name="body_36" pos="0 0 0" rgba="0.5 0.1 0.5 1" size="0.025 0.035" type="capsule" />
+    </body>
+    <body name="object_37" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_37" />
+        <geom name="body_37" pos="0 0 0" rgba="0.2 0.1 0.5 1" size="0.025 0.04" type="capsule" />
+    </body>
+    <body name="object_38" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_38" />
+        <geom name="body_38" pos="0 0 0" rgba="0.7 0.1 0.2 1" size="0.025 0.045" type="capsule" />
+    </body>
+    <body name="object_39" pos=".0 -.6 1.1">
+        <joint type="free" damping="0.007" name="free_joint_39" />
+        <geom name="body_39" pos="0 0 0" rgba="0.7 0.8 0.9 1" size="0.025 0.05" type="capsule" />
+    </body>
+</mujoco>

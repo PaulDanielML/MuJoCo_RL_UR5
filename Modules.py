@@ -149,7 +149,7 @@ class Perception_Module(nn.Module):
 		self.RB3 = BasicBlock(256, 512)
 
 
-	def forward(self, x, verbose=0):
+	def forward(self, x, verbose=1):
 		if verbose == 1:
 			print('### Perception Module ###')
 			print('Input: '.ljust(15), x.size())
@@ -189,7 +189,7 @@ class Grasping_Module(nn.Module):
 		self.sigmoid = nn.Sigmoid()
 
 
-	def forward(self, x, verbose=0):
+	def forward(self, x, verbose=1):
 		if verbose == 1:
 			print('### Grasping Module ###')
 			print('Input: '.ljust(15), x.size())
@@ -212,12 +212,22 @@ class Grasping_Module(nn.Module):
 		if verbose == 1:
 			print('After C1: '.ljust(15), x.size())
 
+		# x.requires_grad_(True)
+		# x.register_hook(self.backward_gradient_hook)
 		x.squeeze_()
-
 		return(self.sigmoid(x))
 
 
-def RESNET(verbose=0):
+	def backward_gradient_hook(self, grad):
+		"""
+		Hook for displaying the indices of non-zero gradients. Useful for making sure only
+		the loss of pixels corresponding to selected actions get backpropagated. 
+		"""
+
+		print(f'Number of non zero gradients: {len([i for i,v in enumerate(grad.view(-1).cpu().numpy()) if v != 0])}')
+
+
+def RESNET():
 	return nn.Sequential(Perception_Module(), Grasping_Module())
 
 
@@ -237,4 +247,8 @@ if __name__ == '__main__':
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 	resnet = RESNET()
+
+	test = torch.Tensor(1,4,200,200)
+
+	output = resnet(test)
 	count_parameters(resnet)
