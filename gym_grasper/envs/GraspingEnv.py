@@ -21,7 +21,7 @@ from pyquaternion import Quaternion
 
 
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
-    def __init__(self, file='/UR5+gripper/UR5gripper_2_finger_many_objects.xml', image_width=200, image_height=200, show_obs=True, demo=False, render=False):
+    def __init__(self, file='/UR5+gripper/UR5gripper_2_finger.xml', image_width=200, image_height=200, show_obs=True, demo=False, render=False):
         self.initialized = False
         self.IMAGE_WIDTH = image_width
         self.IMAGE_HEIGHT = image_height
@@ -107,8 +107,6 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 if grasped_something:
                     # Binary reward
                     reward = 1
-                    # Old reward structure 
-                    # reward = 100
                 else:
                     reward = 0
 
@@ -178,12 +176,9 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         grasp_height = (coordinates_2[2] + self.TABLE_HEIGHT) / 2
         grasp_height = np.round(grasp_height, decimals=3)
         coordinates_2[2] = grasp_height
-        # coordinates_2[2] = 0.91
 
         result2 = self.controller.move_ee(coordinates_2, max_steps=1000, quiet=True, render=render, marker=markers, tolerance=0.01, plot=plot)
         steps2 = self.controller.last_steps
-        
-        # test = self.controller.get_image_data(show=True, height=1000, width=1000)
 
         self.controller.stay(100, render=render)
 
@@ -265,7 +260,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         return observation
 
-    @debug
+    # @debug
     def reset_model(self, show_obs=True):
         """
         Method to perform additional reset steps and return an observation.
@@ -277,49 +272,48 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         qpos[self.controller.actuated_joint_ids] = [0, -1.57, 1.57, -1.57, -1.57, 1.0, 0.3]
 
-        n_objects = 40
+        # n_objects = 40
 
-        for i in range(n_objects):
-            joint_name = f'free_joint_{i}'
-            q_adr = self.model.get_joint_qpos_addr(joint_name)
-            start, end = q_adr
-            qpos[start] = np.random.uniform(low=-0.25, high=0.25)
-            qpos[start+1] = np.random.uniform(low=-0.77, high=-0.43)
-            # qpos[start+2] = 1.0
-            qpos[start+2] = np.random.uniform(low=1.0, high=1.5)
-            qpos[start+3:end] = Quaternion.random().unit.elements
-            # qpos[start+3:end] = [1., 0., 0., 0.]
+        # for i in range(n_objects):
+        #     joint_name = f'free_joint_{i}'
+        #     q_adr = self.model.get_joint_qpos_addr(joint_name)
+        #     start, end = q_adr
+        #     qpos[start] = np.random.uniform(low=-0.25, high=0.25)
+        #     qpos[start+1] = np.random.uniform(low=-0.77, high=-0.43)
+        #     # qpos[start+2] = 1.0
+        #     qpos[start+2] = np.random.uniform(low=1.0, high=1.5)
+        #     qpos[start+3:end] = Quaternion.random().unit.elements
 
 
-        # n_boxes = 3
-        # n_balls = 3
+        n_boxes = 3
+        n_balls = 3
 
-        # for j in ['rot', 'x', 'y', 'z']:
-        #     for i in range(1,n_boxes+1):
-        #         joint_name = 'box_' + str(i) + '_' + j
-        #         q_adr = self.model.get_joint_qpos_addr(joint_name)
-        #         if j == 'x':
-        #             qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
-        #         elif j == 'y':
-        #             qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
-        #         elif j == 'z':
-        #             qpos[q_adr] = 0.0
-        #         elif j == 'rot':
-        #             start, end = q_adr
-        #             qpos[start:end] = [1., 0., 0., 0.]
+        for j in ['rot', 'x', 'y', 'z']:
+            for i in range(1,n_boxes+1):
+                joint_name = 'box_' + str(i) + '_' + j
+                q_adr = self.model.get_joint_qpos_addr(joint_name)
+                if j == 'x':
+                    qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
+                elif j == 'y':
+                    qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
+                elif j == 'z':
+                    qpos[q_adr] = 0.0
+                elif j == 'rot':
+                    start, end = q_adr
+                    qpos[start:end] = [1., 0., 0., 0.]
 
-        #     for i in range(1,n_balls+1):
-        #         joint_name = 'ball_' + str(i) + '_' + j
-        #         q_adr = self.model.get_joint_qpos_addr(joint_name)
-        #         if j == 'x':
-        #             qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
-        #         elif j == 'y':
-        #             qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
-        #         elif j == 'z':
-        #             qpos[q_adr] = 0.0
-        #         elif j == 'rot':
-        #             start, end = q_adr
-        #             qpos[start:end] = [1., 0., 0., 0.]
+            for i in range(1,n_balls+1):
+                joint_name = 'ball_' + str(i) + '_' + j
+                q_adr = self.model.get_joint_qpos_addr(joint_name)
+                if j == 'x':
+                    qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
+                elif j == 'y':
+                    qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
+                elif j == 'z':
+                    qpos[q_adr] = 0.0
+                elif j == 'rot':
+                    start, end = q_adr
+                    qpos[start:end] = [1., 0., 0., 0.]
 
         self.set_state(qpos, qvel)
 

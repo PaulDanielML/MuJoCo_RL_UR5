@@ -1,6 +1,6 @@
 # Deep Reinforcement Learning for robotic pick and place applications using purely visual observations 
 
-## Work in progress! Current training setup iteration: IT4 <br> Next TO-DO: Increase number of objects, pile them on top of each other
+## Work in progress! Current training setup iteration: IT4 <br> Currently working on: IT5, add a dimension to the action space, let the agent choose the grasping z-coordinate
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
