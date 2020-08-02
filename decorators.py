@@ -1,6 +1,7 @@
 import functools
 import time
-import numpy 
+import numpy as np
+from inspect import signature
 
 
 def timer(func):
@@ -34,10 +35,12 @@ def debug(func):
 			for k,v in value.items():
 				print(f'{k}:')
 				print(f'{type(v)!r}', end=' ')
-				if isinstance(v, numpy.ndarray):
+				if isinstance(v, np.ndarray):
 					print(f'Array dimensions: {v.shape}')
 				elif isinstance(v, int):
 					print(v)
+		elif isinstance(value, np.ndarray):
+			print(f'Shape: {value.shape}')
 		else:
 			print(f'{func.__name__} returned {value!r}.')
 		print('#################################')
@@ -61,9 +64,45 @@ def size_parameters(self, new_params):
 
 
 
+def typeassert(*ty_args, **ty_kwargs):
+	def decorate(func):
+		if not __debug__:
+			return func
+		sig = signature(func)
+		bound_types = sig.bind_partial(*ty_args, **ty_kwargs).arguments
+		@functools.wraps(func)
+		def wrapper(*args, **kwargs):
+			bound_values = sig.bind(*args, **kwargs)
+			for name, value in bound_values.arguments.items():
+				if name in bound_types:
+					if not isinstance(value, bound_types[name]):
+						raise TypeError('Argument {} must be {}'.format(name, bound_types[name]))
+			return func(*args, **kwargs)
+		return wrapper
+	return decorate
+
+
+def dict2list(func):
+	@functools.wraps(func)
+	def wrapper_dict2list(*args, **kwargs):
+		output = func(*args, **kwargs)
+		if not isinstance(output, dict):
+			print('returning original output')
+			return output
+		else: 
+			key_list = list(output.keys())
+			new_array = output[key_list[0]]
+			for key in key_list[1:]:
+				if output[key].ndim != output[key_list[0]].ndim:
+					temp = np.expand_dims(output[key], 2)
+					new_array = np.concatenate((new_array, temp), axis=2)
+			return new_array
+	return wrapper_dict2list
+
 
 if __name__ == '__main__':
-	@debug
+	# @debug
+	@typeassert(dict, int, int)
 	def test(arg1, arg2, arg3):
 		return 17
 
