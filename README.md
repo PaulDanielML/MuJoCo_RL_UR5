@@ -1,6 +1,6 @@
 # Deep Reinforcement Learning for robotic pick and place applications using purely visual observations 
 
-## Work in progress! Current training setup iteration: IT4 <br> Currently working on: IT5, add a dimension to the action space, let the agent choose the grasping z-coordinate
+## Work in progress! Current training setup iteration: IT5 <br> Try finding an agent that performs well on IT5 (many objects, large multi-discrete action space)
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
@@ -12,10 +12,11 @@ Trained agent in action            |  Example of predicted grasp chances
 
 Setup iteration            |  Relevant changes 
 :-------------------------:|:-------------------------:
-  IT1 (Baseline)|- Grasp success check after moving straight up (500 steps of trying to close the gripper) <br> - Fixed z-coordinate for grasping <br> - Objects of equal size
-  IT2 | - Grasp success check now after moving to drop location (1000 steps)
-  IT3 | - New two-finger gripper implemented 
+  IT5 | - Many more objects, randomly piled <br> - Actionspace now multi-discrete, with second dimension being a height action between 0 and 10
   IT4 | - Z-coordinate for grasping now calculated using depth data <br> - Objects now vary in size
+  IT3 | - New two-finger gripper implemented 
+  IT2 | - Grasp success check now after moving to drop location (1000 steps)
+  IT1 (Baseline)|- Grasp success check after moving straight up (500 steps of trying to close the gripper) <br> - Fixed z-coordinate for grasping <br> - Objects of equal size
 
 
 This repository provides several python classes for control of robotic arms in MuJoCo: 
