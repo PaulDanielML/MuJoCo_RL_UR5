@@ -149,21 +149,19 @@ class Perception_Module(nn.Module):
 		self.RB3 = BasicBlock(256, 512)
 
 
-	def forward(self, x, verbose=0):
+	def forward(self, x, verbose=1):
 		if verbose == 1:
 			print('### Perception Module ###')
 			print('Input: '.ljust(15), x.size())
 		x = self.C1(x)
 		if verbose == 1:
 			print('After Conv1: '.ljust(15), x.size())
-			print(x.max())
 		x = self.MP1(x)
 		if verbose == 1:
 			print('After MP1: '.ljust(15), x.size())
 		x = self.RB1(x)
 		if verbose == 1:
 			print('After RB1: '.ljust(15), x.size())
-			print(x.max())
 		x = self.MP2(x)
 		if verbose == 1:
 			print('After MP2: '.ljust(15), x.size())
@@ -178,7 +176,7 @@ class Perception_Module(nn.Module):
 
 
 class Grasping_Module(nn.Module):
-	def __init__(self):
+	def __init__(self, output_activation='Sigmoid'):
 		super(Grasping_Module, self).__init__()
 		self.RB1 = BasicBlock(512, 256)
 		self.RB2 = BasicBlock(256, 128)
@@ -186,10 +184,13 @@ class Grasping_Module(nn.Module):
 		self.RB3 = BasicBlock(128, 64)
 		self.UP2 = nn.UpsamplingBilinear2d(scale_factor=2)
 		self.C1 = nn.Conv2d(64, 1, kernel_size=1)
-		self.sigmoid = nn.Sigmoid()
+		self.output_activation = output_activation
+		if self.output_activation is not None:
+			self.sigmoid = nn.Sigmoid()
 
 
-	def forward(self, x, verbose=0):
+
+	def forward(self, x, verbose=1):
 		if verbose == 1:
 			print('### Grasping Module ###')
 			print('Input: '.ljust(15), x.size())
@@ -215,7 +216,12 @@ class Grasping_Module(nn.Module):
 		# x.requires_grad_(True)
 		# x.register_hook(self.backward_gradient_hook)
 		x.squeeze_()
-		return(self.sigmoid(x))
+		if verbose == 1:
+			print('After Squeeze: '.ljust(15), x.size())
+		if self.output_activation is not None:
+			return(self.sigmoid(x))
+		else:
+			return x
 
 
 	def backward_gradient_hook(self, grad):
@@ -229,6 +235,11 @@ class Grasping_Module(nn.Module):
 
 def RESNET():
 	return nn.Sequential(Perception_Module(), Grasping_Module())
+
+
+def POLICY_RESNET():
+	return nn.Sequential(Perception_Module(), Grasping_Module(output_activation=None))
+
 
 
 def count_parameters(model):
@@ -246,9 +257,9 @@ def count_parameters(model):
 if __name__ == '__main__':
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-	resnet = RESNET()
+	resnet = POLICY_RESNET()
 
-	test = torch.Tensor(1,4,200,200)
+	test = torch.Tensor(3,4,200,200)
 
 	output = resnet(test)
 	count_parameters(resnet)

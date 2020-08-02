@@ -16,7 +16,7 @@ from pathlib import Path
 import copy
 from collections import defaultdict
 from termcolor import colored
-from decorators import debug
+from decorators import *
 from pyquaternion import Quaternion
 
 
@@ -68,6 +68,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # Parent class will step once during init to set up the observation space, controller is not yet available at that time.
         # Therefore we simply return a dictionary of zeros of the appropriate size. 
         if not self.initialized:
+            # self.current_observation = np.zeros((200,200,4))
             self.current_observation = defaultdict()
             self.current_observation['rgb'] = np.zeros((self.IMAGE_WIDTH,self.IMAGE_HEIGHT,3))
             self.current_observation['depth'] = np.zeros((self.IMAGE_WIDTH,self.IMAGE_HEIGHT))
@@ -85,6 +86,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 y = action[1]
 
             # Depth value for the pixel corresponding to the action
+            # depth = self.current_observation[y][x][3]
             depth = self.current_observation['depth'][y][x]
 
             coordinates = self.controller.pixel_2_world(pixel_x=x, pixel_y=y, depth=depth, height=self.IMAGE_HEIGHT, width=self.IMAGE_WIDTH)
@@ -98,6 +100,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 print(colored('Skipping execution due to bad depth value!', color='red', attrs=['bold']))
                 # Binary reward
                 reward = 0
+                # Old reward structure 
+                # reward = -10
 
             else:
                 grasped_something = self.move_and_grasp(coordinates, render=self.render, record_grasps=record_grasps, markers=markers)
@@ -106,7 +110,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                     # Binary reward
                     reward = 1
                 else:
-                    reward = 0
+                    reward = -1
 
             self.current_observation = self.get_observation(show=self.show_observations)
 
@@ -241,8 +245,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 print(colored('Did not grasp anything.', color='red', attrs=['bold']))
                 return False   
 
-
-
+    # @debug
+    # @dict2list
     def get_observation(self, show=True):
         """
         Uses the controllers get_image_data method to return an top-down image (as a np-array).
