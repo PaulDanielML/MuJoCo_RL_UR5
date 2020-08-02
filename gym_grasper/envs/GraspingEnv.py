@@ -21,11 +21,11 @@ from pyquaternion import Quaternion
 
 
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
-    def __init__(self, file='/UR5+gripper/UR5gripper_2_finger.xml', image_width=200, image_height=200, show_obs=True, demo=False, render=False):
+    def __init__(self, file='/UR5+gripper/UR5gripper_2_finger_many_objects.xml', image_width=200, image_height=200, show_obs=True, demo=False, render=False):
         self.initialized = False
         self.IMAGE_WIDTH = image_width
         self.IMAGE_HEIGHT = image_height
-        self.action_space_type = 'discrete'
+        self.action_space_type = 'multidiscrete'
         self.step_called = 0
         utils.EzPickle.__init__(self)
         path = os.path.realpath(__file__)
@@ -44,7 +44,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
 
     def __repr__(self):
-        return f'GraspEnv(obs height={self.IMAGE_HEIGHT}, obs_width={self.IMAGE_WIDTH}'
+        return f'GraspEnv(obs height={self.IMAGE_HEIGHT}, obs_width={self.IMAGE_WIDTH}, AS={self.action_space_type})'
        
 
     def step(self, action, record_grasps=False, markers=False):
@@ -82,8 +82,9 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 y = action // self.IMAGE_WIDTH
 
             elif self.action_space_type == 'multidiscrete':
-                x = action[0]
-                y = action[1]
+                x = action[0] % self.IMAGE_WIDTH
+                y = action[0] // self.IMAGE_WIDTH
+                height = action[1]
 
             # Depth value for the pixel corresponding to the action
             # depth = self.current_observation[y][x][3]
@@ -91,8 +92,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
             coordinates = self.controller.pixel_2_world(pixel_x=x, pixel_y=y, depth=depth, height=self.IMAGE_HEIGHT, width=self.IMAGE_WIDTH)
 
-            print(colored('Action: Pixel X: {}, Pixel Y: {}'.format(x, y), color='blue', attrs=['bold']))
-            print(colored('Transformed into world coordinates: {}'.format(coordinates), color='blue', attrs=['bold']))
+            print(colored('Action: Pixel X: {}, Pixel Y: {}, Height: {}'.format(x, y, height), color='blue', attrs=['bold']))
+            print(colored('Transformed into world coordinates: {}'.format(coordinates[:2]), color='blue', attrs=['bold']))
             
             # Check for coordinates we don't need to try
             if coordinates[2] < 0.8 or coordinates[1] > -0.3:
@@ -104,7 +105,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 # reward = -10
 
             else:
-                grasped_something = self.move_and_grasp(coordinates, render=self.render, record_grasps=record_grasps, markers=markers)
+                grasped_something = self.move_and_grasp(coordinates, height, render=self.render, record_grasps=record_grasps, markers=markers)
 
                 if grasped_something:
                     # Binary reward
@@ -112,9 +113,11 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 else:
                     reward = -1
 
+                if grasped_something!='demo':
+                    print(colored('Reward received during step: {}'.format(reward), color='yellow', attrs=['bold']))
+
             self.current_observation = self.get_observation(show=self.show_observations)
 
-            print(colored('Reward received during step: {}'.format(reward), color='yellow', attrs=['bold']))
 
         self.step_called += 1
 
@@ -129,7 +132,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             size = self.IMAGE_WIDTH * self.IMAGE_HEIGHT
             self.action_space = spaces.Discrete(size)
         elif self.action_space_type == 'multidiscrete':
-            self.action_space = spaces.MultiDiscrete([self.IMAGE_HEIGHT, self.IMAGE_WIDTH])
+            self.action_space = spaces.MultiDiscrete([self.IMAGE_HEIGHT*self.IMAGE_WIDTH, 10])
 
         return self.action_space
 
@@ -155,7 +158,11 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.data.ctrl[:] = 0
 
 
-    def move_and_grasp(self, coordinates, render=False, record_grasps=False, markers=False, plot=False):
+    def transform_height(self, height_action, depth_height):
+        return self.TABLE_HEIGHT + height_action * (depth_height - self.TABLE_HEIGHT)/self.action_space.nvec[1]
+
+
+    def move_and_grasp(self, coordinates, height, render=False, record_grasps=False, markers=False, plot=False):
 
         # Try to move directly above target    
         coordinates_1 = copy.deepcopy(coordinates)
@@ -175,9 +182,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         # Move to grasping height
         coordinates_2 = copy.deepcopy(coordinates)
-        grasp_height = (coordinates_2[2] + self.TABLE_HEIGHT) / 2
-        grasp_height = np.round(grasp_height, decimals=3)
-        coordinates_2[2] = grasp_height
+        coordinates_2[2] = self.transform_height(height, coordinates_2[2])
 
         result2 = self.controller.move_ee(coordinates_2, max_steps=1000, quiet=True, render=render, marker=markers, tolerance=0.01, plot=plot)
         steps2 = self.controller.last_steps
@@ -274,48 +279,48 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         qpos[self.controller.actuated_joint_ids] = [0, -1.57, 1.57, -1.57, -1.57, 1.0, 0.3]
 
-        # n_objects = 40
+        n_objects = 40
 
-        # for i in range(n_objects):
-        #     joint_name = f'free_joint_{i}'
-        #     q_adr = self.model.get_joint_qpos_addr(joint_name)
-        #     start, end = q_adr
-        #     qpos[start] = np.random.uniform(low=-0.25, high=0.25)
-        #     qpos[start+1] = np.random.uniform(low=-0.77, high=-0.43)
-        #     # qpos[start+2] = 1.0
-        #     qpos[start+2] = np.random.uniform(low=1.0, high=1.5)
-        #     qpos[start+3:end] = Quaternion.random().unit.elements
+        for i in range(n_objects):
+            joint_name = f'free_joint_{i}'
+            q_adr = self.model.get_joint_qpos_addr(joint_name)
+            start, end = q_adr
+            qpos[start] = np.random.uniform(low=-0.25, high=0.25)
+            qpos[start+1] = np.random.uniform(low=-0.77, high=-0.43)
+            # qpos[start+2] = 1.0
+            qpos[start+2] = np.random.uniform(low=1.0, high=1.5)
+            qpos[start+3:end] = Quaternion.random().unit.elements
 
 
-        n_boxes = 3
-        n_balls = 3
+        # n_boxes = 3
+        # n_balls = 3
 
-        for j in ['rot', 'x', 'y', 'z']:
-            for i in range(1,n_boxes+1):
-                joint_name = 'box_' + str(i) + '_' + j
-                q_adr = self.model.get_joint_qpos_addr(joint_name)
-                if j == 'x':
-                    qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
-                elif j == 'y':
-                    qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
-                elif j == 'z':
-                    qpos[q_adr] = 0.0
-                elif j == 'rot':
-                    start, end = q_adr
-                    qpos[start:end] = [1., 0., 0., 0.]
+        # for j in ['rot', 'x', 'y', 'z']:
+        #     for i in range(1,n_boxes+1):
+        #         joint_name = 'box_' + str(i) + '_' + j
+        #         q_adr = self.model.get_joint_qpos_addr(joint_name)
+        #         if j == 'x':
+        #             qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
+        #         elif j == 'y':
+        #             qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
+        #         elif j == 'z':
+        #             qpos[q_adr] = 0.0
+        #         elif j == 'rot':
+        #             start, end = q_adr
+        #             qpos[start:end] = [1., 0., 0., 0.]
 
-            for i in range(1,n_balls+1):
-                joint_name = 'ball_' + str(i) + '_' + j
-                q_adr = self.model.get_joint_qpos_addr(joint_name)
-                if j == 'x':
-                    qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
-                elif j == 'y':
-                    qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
-                elif j == 'z':
-                    qpos[q_adr] = 0.0
-                elif j == 'rot':
-                    start, end = q_adr
-                    qpos[start:end] = [1., 0., 0., 0.]
+        #     for i in range(1,n_balls+1):
+        #         joint_name = 'ball_' + str(i) + '_' + j
+        #         q_adr = self.model.get_joint_qpos_addr(joint_name)
+        #         if j == 'x':
+        #             qpos[q_adr] = np.random.uniform(low=-0.25, high=0.25)
+        #         elif j == 'y':
+        #             qpos[q_adr] = np.random.uniform(low=-0.17, high=0.17)
+        #         elif j == 'z':
+        #             qpos[q_adr] = 0.0
+        #         elif j == 'rot':
+        #             start, end = q_adr
+        #             qpos[start:end] = [1., 0., 0., 0.]
 
         self.set_state(qpos, qvel)
 

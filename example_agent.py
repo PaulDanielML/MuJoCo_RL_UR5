@@ -5,7 +5,7 @@ import numpy as np
 from termcolor import colored
 import time
 
-env = gym.make('gym_grasper:Grasper-v0')
+env = gym.make('gym_grasper:Grasper-v0', show_obs=False, render=True)
 
 N_EPISODES = 100
 N_STEPS = 100
