@@ -149,7 +149,7 @@ class Perception_Module(nn.Module):
 		self.RB3 = BasicBlock(256, 512)
 
 
-	def forward(self, x, verbose=1):
+	def forward(self, x, verbose=0):
 		if verbose == 1:
 			print('### Perception Module ###')
 			print('Input: '.ljust(15), x.size())
@@ -190,7 +190,7 @@ class Grasping_Module(nn.Module):
 
 
 
-	def forward(self, x, verbose=1):
+	def forward(self, x, verbose=0):
 		if verbose == 1:
 			print('### Grasping Module ###')
 			print('Input: '.ljust(15), x.size())
