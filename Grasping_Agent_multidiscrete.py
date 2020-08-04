@@ -22,20 +22,21 @@ N_EPISODES = 2000
 STEPS_PER_EPISODE = 5
 TARGET_NETWORK_UPDATE = 50
 MEMORY_SIZE = 900
-BATCH_SIZE = 10
+BATCH_SIZE = 12
 GAMMA = 0.0
 LEARNING_RATE = 0.001
-EPS_START = 0.5
-EPS_END = 0.1
+EPS_START = 0.7
+EPS_END = 0.2
 EPS_DECAY = 4000
 SAVE_WEIGHTS = True
 BUFFER = 'RBSTANDARD'
 MODEL = 'RESNET'
+ALGORITHM = 'DQN'
 
 date = '_'.join([str(time.localtime()[1]), str(time.localtime()[2]), str(time.localtime()[0]), str(time.localtime()[3]), str(time.localtime()[4])])
 
 
-DESCRIPTION = '_'.join([MODEL, BUFFER, 'LR', str(LEARNING_RATE), 'H', str(HEIGHT), \
+DESCRIPTION = '_'.join([ALGORITHM ,MODEL, BUFFER, 'LR', str(LEARNING_RATE), 'H', str(HEIGHT), \
                 'W', str(WIDTH), 'STEPS', str(N_EPISODES*STEPS_PER_EPISODE)])
 
 WEIGHT_PATH = DESCRIPTION + '_' + date + '_weights.pt'
@@ -59,22 +60,19 @@ class Grasp_Agent():
             train: If True, will be fully initialized, including replay buffer. Can be set to False for demonstration purposes.
         """
 
+        torch.manual_seed(20)
+        np.random.seed(20)
         self.WIDTH = width
         self.HEIGHT = height
-        self.output = self.WIDTH * self.HEIGHT
+        self.env = gym.make('gym_grasper:Grasper-v0', image_height=HEIGHT, image_width=WIDTH)
+        self.n_actions_1, self.n_actions_2 = self.env.action_space.nvec[0], self.env.action_space.nvec[1]
+        self.output = self.WIDTH * self.HEIGHT * self.n_actions_2
         # Initialize networks
-        if MODEL == 'CONV3_FC1':
-            from Modules import CONV3_FC1
-            self.policy_net = CONV3_FC1(self.WIDTH, self.HEIGHT, self.output).to(device)
-        elif MODEL == 'RESNET':
-            from Modules import RESNET
-            self.policy_net = RESNET().to(device)
+        from Modules import MULTIDISCRETE_RESNET
+        self.policy_net = MULTIDISCRETE_RESNET().to(device)
         # Only need a target network if gamma is not zero
         if GAMMA != 0.0:
-            if MODEL == 'CONV3_FC1':
-                self.target_net = CONV3_FC1(self.WIDTH, self.HEIGHT, self.output).to(device)
-            elif MODEL == 'RESNET':
-                self.target_net = RESNET().to(device)
+            self.target_net = MULTIDISCRETE_RESNET().to(device)
             # No need for training on target net, we just copy the weigts from policy nets if we use it
             self.target_net.eval()
         # Load weights if training should not start from scratch
@@ -123,12 +121,12 @@ class Grasp_Agent():
         if sample > self.eps_threshold:
             with torch.no_grad():
                 # For RESNET
-                max_idx = self.policy_net(state).view(-1).max(0)[1]
+                max_idx = self.policy_net(state.to(device)).view(-1).max(0)[1]
                 max_idx = max_idx.view(1)
-                return max_idx.unsqueeze_(0)
-                # return self.policy_net(state).max(1)[1].view(1, 1) # For CONV3_FC1
+                # Do not want to store replay buffer in GPU memory, so put action tensor to cpu.
+                return max_idx.unsqueeze_(0).cpu()
         else:
-            return torch.tensor([[random.randrange(self.output)]], device=device, dtype=torch.long)
+            return torch.tensor([[random.randrange(self.output)]], dtype=torch.long)
 
 
     def greedy(self, state):
@@ -161,13 +159,14 @@ class Grasp_Agent():
         # Add channel dimension to np-array depth.
         depth = np.expand_dims(depth, 0)
         # Apply rgb normalization transform, this rearanges dimensions, transforms into float tensor,
-        # scales values to range [0,1] and normalizes data, sends to gpu if available.
+        # scales values to range [0,1]
         rgb_tensor = self.normal_rgb(rgb).float()
         depth_tensor = torch.tensor(depth).float()
         # Depth values need to be normalized separately, as they are not int values. Therefore, T.ToTensor() does not work for them.
         depth_tensor = self.normal_depth(depth_tensor)
         
-        obs_tensor = torch.cat((rgb_tensor, depth_tensor), dim=0).to(device)
+        obs_tensor = torch.cat((rgb_tensor, depth_tensor), dim=0)
+        # obs_tensor = torch.cat((rgb_tensor, depth_tensor), dim=0).to(device)
 
         # Add batch dimension.
         obs_tensor.unsqueeze_(0)
@@ -208,6 +207,13 @@ class Grasp_Agent():
         return values[0:4], values[4:8]
 
 
+    def transform_action(self, action):
+        action_value = action.item()
+        action_1 = action_value%self.n_actions_1
+        action_2 = action_value//self.n_actions_1
+
+        return np.array([action_1, action_2])
+
     def learn(self):
         """
         Example implementaion of a training method, using standard DQN-learning.
@@ -233,11 +239,11 @@ class Grasp_Agent():
         else:
             batch = Transition(*zip(*transitions))
 
-        state_batch = torch.cat(batch.state)
-        action_batch = torch.cat(batch.action)
+        state_batch = torch.cat(batch.state).to(device)
+        action_batch = torch.cat(batch.action).to(device)
         if GAMMA != 0.0:
-            next_state_batch = torch.cat(batch.next_state)
-        reward_batch = torch.cat(batch.reward)
+            next_state_batch = torch.cat(batch.next_state).to(device)
+        reward_batch = torch.cat(batch.reward).to(device)
 
         # Current Q prediction of our policy net, for the actions we took
         q_pred = self.policy_net(state_batch).view(BATCH_SIZE, -1).gather(1, action_batch)
@@ -254,6 +260,8 @@ class Grasp_Agent():
             q_expected = reward_batch + (GAMMA * q_next_state)
 
         loss = F.binary_cross_entropy(q_pred, q_expected)
+
+        self.writer.add_scalar('Average loss', loss, global_step=self.steps_done)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -281,10 +289,9 @@ class Grasp_Agent():
 
 
 def main():
-    env = gym.make('gym_grasper:Grasper-v0', image_height=HEIGHT, image_width=WIDTH)
     agent = Grasp_Agent()
     for episode in range(1, N_EPISODES+1):
-        state = env.reset()
+        state = agent.env.reset()
         state = agent.transform_observation(state)
         print(colored('CURRENT EPSILON: {}'.format(agent.eps_threshold), color='blue', attrs=['bold']))
         for step in range(1, STEPS_PER_EPISODE+1):
@@ -293,9 +300,11 @@ def main():
             print('#################################################################')
             
             action = agent.epsilon_greedy(state)
-            next_state, reward, done, _ = env.step(action.item())
+            env_action = agent.transform_action(action)
+            next_state, reward, done, _ = agent.env.step(env_action)
             agent.update_tensorboard(reward)
-            reward = torch.tensor([[reward]], device=device)
+            reward = torch.tensor([[reward]])
+            # reward = torch.tensor([[reward]], device=device)
             next_state = agent.transform_observation(next_state)
             if GAMMA == 0.0:
                 agent.memory.push(state, action, reward)
@@ -313,7 +322,7 @@ def main():
 
     print('Finished training.')
     agent.writer.close()
-    env.close()
+    agent.env.close()
 
 if __name__ == '__main__':
     main()

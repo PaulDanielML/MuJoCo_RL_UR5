@@ -149,7 +149,7 @@ class Perception_Module(nn.Module):
 		self.RB3 = BasicBlock(256, 512)
 
 
-	def forward(self, x, verbose=1):
+	def forward(self, x, verbose=0):
 		if verbose == 1:
 			print('### Perception Module ###')
 			print('Input: '.ljust(15), x.size())
@@ -190,7 +190,55 @@ class Grasping_Module(nn.Module):
 
 
 
-	def forward(self, x, verbose=1):
+	def forward(self, x, verbose=0):
+		if verbose == 1:
+			print('### Grasping Module ###')
+			print('Input: '.ljust(15), x.size())
+		x = self.RB1(x)
+		if verbose == 1:
+			print('After RB1: '.ljust(15), x.size())
+		x = self.RB2(x)
+		if verbose == 1:
+			print('After RB2: '.ljust(15), x.size())
+		x = self.UP1(x)
+		if verbose == 1:
+			print('After UP1: '.ljust(15), x.size())
+		x = self.RB3(x)
+		if verbose == 1:
+			print('After RB3: '.ljust(15), x.size())
+		x = self.UP2(x)
+		if verbose == 1:
+			print('After UP2: '.ljust(15), x.size())
+		x = self.C1(x)
+		if verbose == 1:
+			print('After C1: '.ljust(15), x.size())
+
+		# x.requires_grad_(True)
+		# x.register_hook(self.backward_gradient_hook)
+		x.squeeze_()
+		if verbose == 1:
+			print('After Squeeze: '.ljust(15), x.size())
+		if self.output_activation is not None:
+			return(self.sigmoid(x))
+		else:
+			return x
+
+
+class Grasping_Module_multidiscrete(nn.Module):
+	def __init__(self, output_activation='Sigmoid', act_dim_2=10):
+		super(Grasping_Module_multidiscrete, self).__init__()
+		self.RB1 = BasicBlock(512, 256)
+		self.RB2 = BasicBlock(256, 128)
+		self.UP1 = nn.UpsamplingBilinear2d(scale_factor=2)
+		self.RB3 = BasicBlock(128, 64)
+		self.UP2 = nn.UpsamplingBilinear2d(scale_factor=2)
+		self.C1 = nn.Conv2d(64, act_dim_2, kernel_size=1)
+		self.output_activation = output_activation
+		if self.output_activation is not None:
+			self.sigmoid = nn.Sigmoid()
+
+
+	def forward(self, x, verbose=0):
 		if verbose == 1:
 			print('### Grasping Module ###')
 			print('Input: '.ljust(15), x.size())
@@ -240,6 +288,9 @@ def RESNET():
 def POLICY_RESNET():
 	return nn.Sequential(Perception_Module(), Grasping_Module(output_activation=None))
 
+def MULTIDISCRETE_RESNET():
+	return nn.Sequential(Perception_Module(), Grasping_Module_multidiscrete())
+
 
 
 def count_parameters(model):
@@ -257,7 +308,8 @@ def count_parameters(model):
 if __name__ == '__main__':
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-	resnet = POLICY_RESNET()
+	# resnet = MULTIDISCRETE_RESNET()
+	resnet = RESNET()
 
 	test = torch.Tensor(3,4,200,200)
 
