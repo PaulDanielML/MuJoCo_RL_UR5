@@ -22,6 +22,7 @@ from pyquaternion import Quaternion
 
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def __init__(self, file='/UR5+gripper/UR5gripper_2_finger_many_objects.xml', image_width=200, image_height=200, show_obs=True, demo=False, render=False):
+    # def __init__(self, file='/UR5+gripper/UR5gripper_2_finger.xml', image_width=200, image_height=200, show_obs=True, demo=False, render=False):
         self.initialized = False
         self.IMAGE_WIDTH = image_width
         self.IMAGE_HEIGHT = image_height
@@ -32,14 +33,16 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         path = str(Path(path).parent.parent.parent)
         full_path = path + file
         mujoco_env.MujocoEnv.__init__(self, full_path, 1)
-        # render once to initialize a viewer object
-        self.render()
+        if render:
+            # render once to initialize a viewer object
+            self.render()
         self.controller = MJ_Controller(self.model, self.sim, self.viewer)
         self.initialized = True
         self.grasp_counter = 0
         self.show_observations = show_obs
         self.demo_mode = demo
-        self.TABLE_HEIGHT = 0.89
+        self.TABLE_HEIGHT = 0.91
+        # self.TABLE_HEIGHT = 0.89
         self.render = render
 
 
@@ -47,7 +50,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         return f'GraspEnv(obs height={self.IMAGE_HEIGHT}, obs_width={self.IMAGE_WIDTH}, AS={self.action_space_type})'
        
 
-    def step(self, action, record_grasps=False, markers=False):
+    def step(self, action, record_grasps=False, markers=False, action_info='no info'):
         """
         Lets the agent execute the action.
         Depending on the value set when calling mujoco_env.MujocoEnv.__init__(), one step of the agent will correspond to
@@ -92,7 +95,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
             coordinates = self.controller.pixel_2_world(pixel_x=x, pixel_y=y, depth=depth, height=self.IMAGE_HEIGHT, width=self.IMAGE_WIDTH)
 
-            print(colored('Action: Pixel X: {}, Pixel Y: {}, Height: {}'.format(x, y, height), color='blue', attrs=['bold']))
+            print(colored('Action ({}): Pixel X: {}, Pixel Y: {}, Height: {} ({} m)'.format(action_info ,x, y, height, self.transform_height(height, coordinates[2])), color='blue', attrs=['bold']))
             print(colored('Transformed into world coordinates: {}'.format(coordinates[:2]), color='blue', attrs=['bold']))
             
             # Check for coordinates we don't need to try
@@ -101,8 +104,6 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 print(colored('Skipping execution due to bad depth value!', color='red', attrs=['bold']))
                 # Binary reward
                 reward = 0
-                # Old reward structure 
-                # reward = -10
 
             else:
                 grasped_something = self.move_and_grasp(coordinates, height, render=self.render, record_grasps=record_grasps, markers=markers)
@@ -111,7 +112,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                     # Binary reward
                     reward = 1
                 else:
-                    reward = -1
+                    reward = 0
 
                 if grasped_something!='demo':
                     print(colored('Reward received during step: {}'.format(reward), color='yellow', attrs=['bold']))
@@ -159,7 +160,8 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
 
     def transform_height(self, height_action, depth_height):
-        return self.TABLE_HEIGHT + height_action * (depth_height - self.TABLE_HEIGHT)/self.action_space.nvec[1]
+        return np.round(self.TABLE_HEIGHT + height_action * (0.1)/self.action_space.nvec[1], decimals=3)
+        # return np.round(max(self.TABLE_HEIGHT, self.TABLE_HEIGHT + height_action * (depth_height - self.TABLE_HEIGHT)/self.action_space.nvec[1]), decimals=3)
 
 
     def move_and_grasp(self, coordinates, height, render=False, record_grasps=False, markers=False, plot=False):
@@ -327,7 +329,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.controller.set_group_joint_target(group='All', target= qpos[self.controller.actuated_joint_ids])
 
         # Turn this on for training, so the objects drop down before the observation
-        self.controller.stay(200, render=self.render)
+        self.controller.stay(300, render=self.render)
         if self.demo_mode:
             self.controller.stay(500, render=self.render)
         # return an observation image

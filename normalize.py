@@ -24,13 +24,19 @@ for i in range(100):
 
 print('Collected 100 images from the environment.')
 
-rgb_arr = np.array(rgb_list) / 255
+rgb_arr = np.array(rgb_list)
+# rgb_arr = np.array(rgb_list) / 255
 depth_arr = np.array(depth_list)
 
 red = rgb_arr[:, :, :, 0].flatten()
 green = rgb_arr[:, :, :, 1].flatten()
 blue = rgb_arr[:, :, :, 2].flatten()
 depth = depth_arr.flatten()
+
+# depth_min = np.min(depth)
+# depth_max = np.max(depth)
+
+# depth = (depth - depth_min) / (depth_max - depth_min)
 
 print('Got {} pixel values.'.format(red.shape[0]))
 

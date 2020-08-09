@@ -308,7 +308,8 @@ class MJ_Controller(object):
         Closes the gripper while keeping the arm in a steady position.
         """
 
-        result = self.move_group_to_joint_target(group='Gripper', target=[-0.4], tolerance=0.05, **kwargs)
+        result = self.move_group_to_joint_target(group='Gripper', target=[-0.4], tolerance=0.01, **kwargs)
+        # result = self.move_group_to_joint_target(group='Gripper', target=[-0.4], tolerance=0.05, **kwargs)
         # print('Closed: ', self.sim.data.qpos[self.actuated_joint_ids][self.groups['Gripper']])
         # result = self.move_group_to_joint_target(group='Gripper', target=[0.45, 0.45, 0.55, -0.17], tolerance=0.05, max_steps=max_steps, render=render, marker=True, quiet=quiet, plot=plot)
         return result
