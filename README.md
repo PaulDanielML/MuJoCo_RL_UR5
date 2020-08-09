@@ -4,10 +4,12 @@
 
 **Author:** Paul Daniel (pdd@mp.aau.dk)
 
+### Traits of this environment: Very large and multi-discrete actionspace, very high sample-cost, visual observations.
+
 
 Trained agent in action            |  Example of predicted grasp chances 
 :---------------------------------:|:-------------------------:
-![](/media/gif_3.gif "Trained Agent")  |  ![](/media/overlay.png "Overlay")
+![](/media/gif_3.gif "Trained Agent")  |  ![](/media/gif_4.gif "Overlay")
 
 
 Setup iteration            |  Relevant changes 

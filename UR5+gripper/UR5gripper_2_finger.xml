@@ -113,13 +113,22 @@ Control Engineering / Automation Engineering
         <!--Floor Property-->
         <geom name='floor' material="floor_mat" pos='0 0 0' size='2.5 2.5 0.1'  type='plane' />
 
-        <body name="pick_box" pos="0 -0.6 0.0" euler="0 0 1.57">
+<!--         <body name="pick_box" pos="0 -0.6 0.0" euler="0 0 1.57">
             <geom size=".2 .28 .03" pos ="0 0 0.86" type="box" material="bench_mat"/>
-            <!-- <geom size=".2 .28 .03" pos ="0 0 0.86" type="box" material="bench_mat" friction="2 0.005 0.0001"/> -->
             <geom size=".03 .27 .43" pos ="0.23 0.0 0.43" type="box" material="bench_mat"/>
             <geom size=".03 .27 .43" pos ="-0.23 0.0 0.43" type="box" material="bench_mat"/>
             <geom size=".26 .03 .43" pos ="0.0 0.3 0.43" type="box" material="bench_mat"/>
             <geom size=".26 .03 .43" pos ="0.0 -0.3 0.43" type="box" material="bench_mat"/>
+            <inertial pos="0 0 0" mass="1000" diaginertia="0 0 0" />
+        </body> -->
+
+        <body name="pick_box" pos="0 -0.6 0.0" euler="0 0 1.57">
+            <geom size=".2 .28 .03" pos ="0 0 0.88" type="box" material="bench_mat"/>
+            <!-- <geom size=".2 .28 .03" pos ="0 0 0.86" type="box" material="bench_mat" friction="2 0.005 0.0001"/> -->
+            <geom size=".03 .27 .44" pos ="0.23 0.0 0.44" type="box" material="bench_mat"/>
+            <geom size=".03 .27 .44" pos ="-0.23 0.0 0.44" type="box" material="bench_mat"/>
+            <geom size=".26 .03 .44" pos ="0.0 0.3 0.44" type="box" material="bench_mat"/>
+            <geom size=".26 .03 .44" pos ="0.0 -0.3 0.44" type="box" material="bench_mat"/>
             <inertial pos="0 0 0" mass="1000" diaginertia="0 0 0" />
         </body>
 
@@ -221,7 +230,6 @@ Control Engineering / Automation Engineering
                 <inertial pos="0 0 0.03" mass="0.5" diaginertia="0 0 0" />
         </body> -->
 
-        <!-- <body name="box_1" pos=".2 -.6 0.9"> -->
         <body name="box_1" pos=".0 -.6 0.95">
             <joint armature="0" axis="1 0 0" damping="0" limited="true" name="box_1_x" pos="0 0 0" range="-5. 5." stiffness="0" type="slide"/>
             <joint armature="0" axis="0 1 0" damping="0" limited="true" name="box_1_y" pos="0 0 0" range="-5. 5." stiffness="0" type="slide"/>

@@ -29,6 +29,7 @@ class ReplayBuffer(object):
 		self.memory = []
 		self.position = 0
 		self.simple = simple
+		random.seed(20)
 
 
 	def push(self, *args):
