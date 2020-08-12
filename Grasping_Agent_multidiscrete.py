@@ -15,19 +15,22 @@ import random
 import math
 from collections import deque, defaultdict
 import time
+from Modules import MULTIDISCRETE_RESNET
+
 
 HEIGHT = 200
 WIDTH = 200
-N_EPISODES = 3
-STEPS_PER_EPISODE = 3
-TARGET_NETWORK_UPDATE = 50
+N_EPISODES = 300
+STEPS_PER_EPISODE = 50
 MEMORY_SIZE = 2000
-BATCH_SIZE = 12
+MAX_POSSIBLE_SAMPLES = 12                                               # Number of transitions that fits on GPU memory for one backward-call
+NUMBER_ACCUMULATIONS_BEFORE_UPDATE = 1                                  # How often to accumulate gradients before updating
+BATCH_SIZE = MAX_POSSIBLE_SAMPLES*NUMBER_ACCUMULATIONS_BEFORE_UPDATE    # Effective batch size
 GAMMA = 0.0
 LEARNING_RATE = 0.001
 EPS_START = 1.0
 EPS_END = 0.3
-EPS_DECAY = 6000
+EPS_DECAY = 8000
 SAVE_WEIGHTS = True
 MODEL = 'RESNET'
 ALGORITHM = 'DQN'
@@ -42,7 +45,7 @@ class Grasp_Agent():
     Implements some basic methods for normalization, action selection, observation transformation and learning. 
     """
 
-    def __init__(self, height=HEIGHT, width=WIDTH, mem_size=MEMORY_SIZE, eps_start=EPS_START, eps_end=EPS_END, eps_decay=EPS_DECAY, load_path=None, train=True, seed=20, description='Grasping_Agent'):
+    def __init__(self, height=HEIGHT, width=WIDTH, mem_size=MEMORY_SIZE, eps_start=EPS_START, eps_end=EPS_END, eps_decay=EPS_DECAY, load_path=None, train=True, seed=20):
         """
         Args:
             height: Observation height (in pixels).
@@ -66,7 +69,6 @@ class Grasp_Agent():
         self.n_actions_1, self.n_actions_2 = self.env.action_space.nvec[0], self.env.action_space.nvec[1]
         self.output = self.WIDTH * self.HEIGHT * self.n_actions_2
         # Initialize networks
-        from Modules import MULTIDISCRETE_RESNET
         self.policy_net = MULTIDISCRETE_RESNET().to(device)
         # Only need a target network if gamma is not zero
         if GAMMA != 0.0:
@@ -75,7 +77,8 @@ class Grasp_Agent():
             self.target_net.eval()
         # Load weights if training should not start from scratch
         if load_path is not None:
-            self.policy_net.load_state_dict(torch.load(load_path))
+            checkpoint = torch.load(load_path)
+            self.policy_net.load_state_dict(checkpoint['model_state_dict'])
             if GAMMA != 0.0:
                 self.target_net.load_state_dict(torch.load(load_path))
             print('Successfully loaded weights from {}.'.format(load_path))
@@ -99,17 +102,32 @@ class Grasp_Agent():
                 self.memory = ReplayBuffer(mem_size)
             # Using SGD with parameters described in TossingBot paper
             self.optimizer = optim.SGD(self.policy_net.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=0.00002)
-            self.steps_done = 0
-            self.eps_threshold = EPS_START
+            if load_path is not None:
+                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+                self.steps_done = checkpoint['step']
+                self.eps_threshold = checkpoint['epsilon']
+                self.DESCRIPTION = '_continue_' + load_path[:-11] + '_at_' + str(self.steps_done)
+                self.WEIGHT_PATH = load_path
+                self.greedy_heights = checkpoint['greedy_heights']
+                self.random_heights = checkpoint['random_heights']
+                self.greedy_heights_successes = checkpoint['greedy_heights_successes']
+                self.random_heights_successes = checkpoint['random_heights_successes']
+            else:
+                self.steps_done = 0
+                self.eps_threshold = EPS_START
+                date = '_'.join([str(time.localtime()[1]), str(time.localtime()[2]), str(time.localtime()[0]), str(time.localtime()[3]), str(time.localtime()[4])])
+                self.DESCRIPTION = '_'.join([ALGORITHM ,MODEL, 'LR', str(LEARNING_RATE), 'H', 'EPS_START', str(EPS_START), 'EPS_END', str(EPS_END), str(HEIGHT), \
+                        'W', str(WIDTH), 'STEPS', str(N_EPISODES*STEPS_PER_EPISODE), 'BUFFER_SIZE', str(MEMORY_SIZE), 'BATCH_SIZE', str(BATCH_SIZE), 'SEED', str(seed)])
+                self.WEIGHT_PATH = self.DESCRIPTION + '_' + date + '_weights.pt'
+                self.greedy_heights = defaultdict(int)
+                self.random_heights = defaultdict(int)
+                self.greedy_heights_successes = defaultdict(int)
+                self.random_heights_successes = defaultdict(int)
             # Tensorboard setup
-            self.writer = SummaryWriter(comment=description)
+            self.writer = SummaryWriter(comment=self.DESCRIPTION)
             self.writer.add_graph(self.policy_net, torch.zeros(1, 4, self.WIDTH, self.HEIGHT).to(device))
-            self.writer.close()
+            # self.writer.close()
             self.last_1000_rewards = deque(maxlen=1000)
-            self.greedy_heights = defaultdict(int)
-            self.random_heights = defaultdict(int)
-            self.greedy_heights_successes = defaultdict(int)
-            self.random_heights_successes = defaultdict(int)
             self.last_100_loss = deque(maxlen=100)
             self.last_1000_actions = deque(maxlen=1000)
 
@@ -123,10 +141,14 @@ class Grasp_Agent():
         """
 
         sample = random.random()
-        self.eps_threshold = EPS_END + (EPS_START - EPS_END) * \
-            math.exp(-1. * self.steps_done / EPS_DECAY)
+        # self.eps_threshold = EPS_END + (EPS_START - EPS_END) * \
+            # math.exp(-1. * self.steps_done / EPS_DECAY)
+        self.eps_threshold = 0.0
         self.writer.add_scalar('Epsilon', self.eps_threshold, global_step=self.steps_done)
         self.steps_done += 1
+        # if self.steps_done < 2*BATCH_SIZE:
+            # self.last_action = 'random'
+            # return torch.tensor([[random.randrange(self.output)]], dtype=torch.long)
         if sample > self.eps_threshold:
             self.last_action = 'greedy'
             with torch.no_grad():
@@ -145,7 +167,7 @@ class Grasp_Agent():
         Always returns the greedy action. For demonstrating learned behaviour. 
 
         Args: 
-            state: An observation / state that will be forwarded through the policy to receive the action with the highest Q value. 
+            state: An observation / state that will be forwarded through the policy network to receive the action with the highest Q value. 
         """
 
         self.last_action = 'greedy'
@@ -232,14 +254,9 @@ class Grasp_Agent():
         """
 
         # Make sure we have collected enough data for at least one batch
-        if len(self.memory) < BATCH_SIZE:
+        if len(self.memory) < 2*BATCH_SIZE:
             print('Filling the replay buffer ...')
             return
-
-        # Transfer weights every TARGET_NETWORK_UPDATE steps
-        if GAMMA != 0.0:
-            if self.steps_done % TARGET_NETWORK_UPDATE == 0:
-                self.target_net.load_state_dict(self.policy_net.state_dict())
 
         # Sample the replay buffer
         transitions = self.memory.sample(BATCH_SIZE)
@@ -249,34 +266,44 @@ class Grasp_Agent():
         else:
             batch = Transition(*zip(*transitions))
 
-        state_batch = torch.cat(batch.state).to(device)
-        action_batch = torch.cat(batch.action).to(device)
-        if GAMMA != 0.0:
-            next_state_batch = torch.cat(batch.next_state).to(device)
-        reward_batch = torch.cat(batch.reward).to(device)
+        # Gradient accumulation to bypass GPU memory restrictions
+        for i in range(NUMBER_ACCUMULATIONS_BEFORE_UPDATE):
+            # Transfer weights every TARGET_NETWORK_UPDATE steps
+            if GAMMA != 0.0:
+                if self.steps_done % TARGET_NETWORK_UPDATE == 0:
+                    self.target_net.load_state_dict(self.policy_net.state_dict())
 
-        # Current Q prediction of our policy net, for the actions we took
-        q_pred = self.policy_net(state_batch).view(BATCH_SIZE, -1).gather(1, action_batch)
-        # q_pred = self.policy_net(state_batch).gather(1, action_batch)
+            start_idx = i * MAX_POSSIBLE_SAMPLES
+            end_idx = (i+1) * MAX_POSSIBLE_SAMPLES
 
-        if GAMMA == 0.0:
-            q_expected = reward_batch.float()
+            state_batch = torch.cat(batch.state[start_idx:end_idx]).to(device)
+            action_batch = torch.cat(batch.action[start_idx:end_idx]).to(device)
+            if GAMMA != 0.0:
+                next_state_batch = torch.cat(batch.next_state[start_idx:end_idx]).to(device)
+            reward_batch = torch.cat(batch.reward[start_idx:end_idx]).to(device)
 
-        else:
-            # Q prediction of the target net of the next state
-            q_next_state = self.target_net(next_state_batch).max(1)[0].unsqueeze(1).detach()
+            # Current Q prediction of our policy net, for the actions we took
+            q_pred = self.policy_net(state_batch).view(MAX_POSSIBLE_SAMPLES, -1).gather(1, action_batch)
+            # q_pred = self.policy_net(state_batch).gather(1, action_batch)
 
-            # Calulate expected Q value using Bellmann: Q_t = r + gamma*Q_t+1
-            q_expected = reward_batch + (GAMMA * q_next_state)
+            if GAMMA == 0.0:
+                q_expected = reward_batch.float()
+            else:
+                # Q prediction of the target net of the next state
+                q_next_state = self.target_net(next_state_batch).max(1)[0].unsqueeze(1).detach()
 
-        loss = F.binary_cross_entropy(q_pred, q_expected)
+                # Calulate expected Q value using Bellmann: Q_t = r + gamma*Q_t+1
+                q_expected = reward_batch + (GAMMA * q_next_state)
+
+            loss = F.binary_cross_entropy(q_pred, q_expected) / NUMBER_ACCUMULATIONS_BEFORE_UPDATE
+            loss.backward()
+
 
         self.last_100_loss.append(loss.item())
         # self.writer.add_scalar('Average loss', loss, global_step=self.steps_done)
+        self.optimizer.step()
 
         self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
 
     def update_tensorboard(self, reward, action):
         """
@@ -325,13 +352,11 @@ class Grasp_Agent():
 
 def main():
 
-    for rand_seed in [333]:
-        date = '_'.join([str(time.localtime()[1]), str(time.localtime()[2]), str(time.localtime()[0]), str(time.localtime()[3]), str(time.localtime()[4])])
-        DESCRIPTION = '_'.join([ALGORITHM ,MODEL, 'LR', str(LEARNING_RATE), 'H', 'EPS_START', str(EPS_START), 'EPS_END', str(EPS_END), str(HEIGHT), \
-                        'W', str(WIDTH), 'STEPS', str(N_EPISODES*STEPS_PER_EPISODE), 'BUFFER_SIZE', str(MEMORY_SIZE), 'BATCH_SIZE', str(BATCH_SIZE), 'SEED', str(rand_seed)])
-        WEIGHT_PATH = DESCRIPTION + '_' + date + '_weights.pt'
+    for rand_seed in [440]:
+        LOAD_PATH = 'DQN_RESNET_LR_0.001_H_EPS_START_1.0_EPS_END_0.3_200_W_200_STEPS_20000_BUFFER_SIZE_2000_BATCH_SIZE_12_SEED_333_8_10_2020_0_9_weights.pt'
 
-        agent = Grasp_Agent(seed=rand_seed, description=DESCRIPTION)
+        agent = Grasp_Agent(seed=rand_seed, load_path=LOAD_PATH)
+        agent.optimizer.zero_grad()
         for episode in range(1, N_EPISODES+1):
             state = agent.env.reset()
             state = agent.transform_observation(state)
@@ -358,8 +383,19 @@ def main():
 
 
         if SAVE_WEIGHTS:
-            torch.save(agent.policy_net.state_dict(), WEIGHT_PATH)
-            print('Saved weights to {}.'.format(WEIGHT_PATH))
+            torch.save({
+            'step': agent.steps_done,
+            'model_state_dict': agent.policy_net.state_dict(),
+            'optimizer_state_dict': agent.optimizer.state_dict(),
+            'epsilon': agent.eps_threshold,
+            'greedy_heights': agent.greedy_heights,
+            'random_heights': agent.random_heights,
+            'greedy_heights_successes': agent.greedy_heights_successes,
+            'random_heights_successes': agent.random_heights_successes
+            }, agent.WEIGHT_PATH)
+
+            # torch.save(agent.policy_net.state_dict(), WEIGHT_PATH)
+            print('Saved checkpoint to {}.'.format(agent.WEIGHT_PATH))
 
 
         print(f'Finished training (rand_seed = {rand_seed}).')

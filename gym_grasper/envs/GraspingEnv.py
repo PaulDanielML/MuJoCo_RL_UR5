@@ -21,8 +21,8 @@ from pyquaternion import Quaternion
 
 
 class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
-    def __init__(self, file='/UR5+gripper/UR5gripper_2_finger_many_objects.xml', image_width=200, image_height=200, show_obs=True, demo=False, render=False):
     # def __init__(self, file='/UR5+gripper/UR5gripper_2_finger.xml', image_width=200, image_height=200, show_obs=True, demo=False, render=False):
+    def __init__(self, file='/UR5+gripper/UR5gripper_2_finger_many_objects.xml', image_width=200, image_height=200, show_obs=True, demo=False, render=False):
         self.initialized = False
         self.IMAGE_WIDTH = image_width
         self.IMAGE_HEIGHT = image_height
@@ -186,12 +186,16 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         coordinates_2 = copy.deepcopy(coordinates)
         coordinates_2[2] = self.transform_height(height, coordinates_2[2])
 
-        result2 = self.controller.move_ee(coordinates_2, max_steps=1000, quiet=True, render=render, marker=markers, tolerance=0.01, plot=plot)
+        result2 = self.controller.move_ee(coordinates_2, max_steps=300, quiet=True, render=render, marker=markers, tolerance=0.01, plot=plot)
         steps2 = self.controller.last_steps
 
-        self.controller.stay(100, render=render)
+        if result2[:3] == 'max':
+            result2 = 'Could not reach target location'
+            result_grasp = False
 
-        result_grasp = self.controller.grasp(render=render, quiet=True, marker=markers, plot=plot)
+        else:
+            self.controller.stay(100, render=render)
+            result_grasp = self.controller.grasp(render=render, quiet=True, marker=markers, plot=plot)
 
         self.controller.actuators[0][4].Kp = 10.0
 
@@ -329,7 +333,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.controller.set_group_joint_target(group='All', target= qpos[self.controller.actuated_joint_ids])
 
         # Turn this on for training, so the objects drop down before the observation
-        self.controller.stay(300, render=self.render)
+        self.controller.stay(1000, render=self.render)
         if self.demo_mode:
             self.controller.stay(500, render=self.render)
         # return an observation image
