@@ -2,9 +2,9 @@
 
 ## Work in progress! Current training setup iteration: IT5 <br> Try finding an agent that performs well on IT5 (many objects, large multi-discrete action space)
 
-**Author:** Paul Daniel (pdd@mp.aau.dk)
+**Author:** Paul Daniel (paudan22@gmail.com)
 
-### Traits of this environment: Very large and multi-discrete actionspace, very high sample-cost, visual observations.
+### Traits of this environment: Very large and multi-discrete actionspace, very high sample-cost, visual observations, binary reward.
 
 
 Trained agent in action            |  Example of predicted grasp chances 
@@ -14,7 +14,7 @@ Trained agent in action            |  Example of predicted grasp chances
 
 Setup iteration            |  Relevant changes 
 :-------------------------:|:-------------------------:
-  IT5 | - Many more objects, randomly piled <br> - Actionspace now multi-discrete, with second dimension being a height action between 0 and 10
+  IT5 | - Many more objects, randomly piled <br> - Actionspace now multi-discrete, with second dimension being a rotation action
   IT4 | - Z-coordinate for grasping now calculated using depth data <br> - Objects now vary in size
   IT3 | - New two-finger gripper implemented 
   IT2 | - Grasp success check now after moving to drop location (1000 steps)
