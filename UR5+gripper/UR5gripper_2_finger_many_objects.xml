@@ -118,13 +118,20 @@ Control Engineering / Automation Engineering
 
         <body name="pick_box" pos="0 -0.6 0.0" euler="0 0 1.57">
             <geom size=".2 .28 .03" pos ="0 0 0.86" type="box" material="bench_mat"/>
-            <!-- <geom size=".2 .28 .03" pos ="0 0 0.86" type="box" material="bench_mat" friction="2 0.005 0.0001"/> -->
-            <geom size=".03 .27 .48" pos ="0.23 0.0 0.48" type="box" material="bench_mat"/>
-            <geom size=".03 .27 .48" pos ="-0.23 0.0 0.48" type="box" material="bench_mat"/>
-            <geom size=".26 .03 .48" pos ="0.0 0.3 0.48" type="box" material="bench_mat"/>
-            <geom size=".26 .03 .48" pos ="0.0 -0.3 0.48" type="box" material="bench_mat"/>
+            <geom size=".03 .27 .45" pos ="0.23 0.0 0.45" type="box" material="bench_mat"/>
+            <geom size=".03 .27 .45" pos ="-0.23 0.0 0.45" type="box" material="bench_mat"/>
+            <geom size=".26 .03 .45" pos ="0.0 0.3 0.45" type="box" material="bench_mat"/>
+            <geom size=".26 .03 .45" pos ="0.0 -0.3 0.45" type="box" material="bench_mat"/>
             <inertial pos="0 0 0" mass="1000" diaginertia="0 0 0" />
-        </body>
+        </body> 
+<!--         <body name="pick_box" pos="0.1 -0.55 0.0" euler="0 0 1.57">
+            <geom size=".15 .15 .03" pos ="0 0 0.86" type="box" material="bench_mat"/>
+            <geom size=".03 .27 .45" pos ="0.23 0.0 0.45" type="box" material="bench_mat"/>
+            <geom size=".03 .27 .45" pos ="-0.23 0.0 0.45" type="box" material="bench_mat"/>
+            <geom size=".26 .03 .45" pos ="0.0 0.3 0.45" type="box" material="bench_mat"/>
+            <geom size=".26 .03 .45" pos ="0.0 -0.3 0.45" type="box" material="bench_mat"/>
+            <inertial pos="0 0 0" mass="1000" diaginertia="0 0 0" />
+        </body> -->
 
 
         <body name="drop_box" pos="0.6 0.1 0.0">
@@ -138,7 +145,8 @@ Control Engineering / Automation Engineering
 
 
         <!--Robot UR5-->
-        <body name="box_link" pos="0 0 0.435">
+        <body name="box_link" pos="-0.1 0 0.435">
+        <!-- <body name="box_link" pos="0 0 0.435"> -->
             <!--<geom size=".3 .2 .435" type="box" material="bench_mat"/>-->
             <geom size=".29 .19 .03" pos ="0 0 0.4" type="box" material="bench_mat"/>
             <geom size=".29 .19 .03" pos ="0 0 -0.2" type="box" material="bench_mat"/>

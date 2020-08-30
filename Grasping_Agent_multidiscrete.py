@@ -20,7 +20,7 @@ from Modules import MULTIDISCRETE_RESNET
 
 HEIGHT = 200
 WIDTH = 200
-N_EPISODES = 300
+N_EPISODES = 80
 STEPS_PER_EPISODE = 50
 MEMORY_SIZE = 2000
 MAX_POSSIBLE_SAMPLES = 12                                               # Number of transitions that fits on GPU memory for one backward-call
@@ -35,9 +35,8 @@ SAVE_WEIGHTS = True
 MODEL = 'RESNET'
 ALGORITHM = 'DQN'
 
-
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class Grasp_Agent():
     """
@@ -45,7 +44,7 @@ class Grasp_Agent():
     Implements some basic methods for normalization, action selection, observation transformation and learning. 
     """
 
-    def __init__(self, height=HEIGHT, width=WIDTH, mem_size=MEMORY_SIZE, eps_start=EPS_START, eps_end=EPS_END, eps_decay=EPS_DECAY, load_path=None, train=True, seed=20):
+    def __init__(self, height=HEIGHT, width=WIDTH, learning_rate=LEARNING_RATE, mem_size=MEMORY_SIZE, eps_start=EPS_START, eps_end=EPS_END, eps_decay=EPS_DECAY, load_path=None, train=True, seed=20):
         """
         Args:
             height: Observation height (in pixels).
@@ -63,16 +62,17 @@ class Grasp_Agent():
         self.WIDTH = width
         self.HEIGHT = height
         if train:
-            self.env = gym.make('gym_grasper:Grasper-v0', image_height=HEIGHT, image_width=WIDTH)
+            self.env = gym.make('gym_grasper:Grasper-v0', image_height=HEIGHT, image_width=WIDTH, render=False)
+            # self.env = gym.make('gym_grasper:Grasper-v0', image_height=HEIGHT, image_width=WIDTH)
         else:
             self.env = gym.make('gym_grasper:Grasper-v0', image_height=HEIGHT, image_width=WIDTH, show_obs=False, demo=True, render=True)
         self.n_actions_1, self.n_actions_2 = self.env.action_space.nvec[0], self.env.action_space.nvec[1]
-        self.output = self.WIDTH * self.HEIGHT * self.n_actions_2
+        self.output = self.n_actions_1 * self.n_actions_2
         # Initialize networks
-        self.policy_net = MULTIDISCRETE_RESNET().to(device)
+        self.policy_net = MULTIDISCRETE_RESNET(number_actions_dim_2=self.n_actions_2).to(device)
         # Only need a target network if gamma is not zero
         if GAMMA != 0.0:
-            self.target_net = MULTIDISCRETE_RESNET().to(device)
+            self.target_net = MULTIDISCRETE_RESNET(number_actions_dim_2=self.n_actions_2).to(device)
             # No need for training on target net, we just copy the weigts from policy nets if we use it
             self.target_net.eval()
         # Load weights if training should not start from scratch
@@ -80,7 +80,7 @@ class Grasp_Agent():
             checkpoint = torch.load(load_path)
             self.policy_net.load_state_dict(checkpoint['model_state_dict'])
             if GAMMA != 0.0:
-                self.target_net.load_state_dict(torch.load(load_path))
+                self.target_net.load_state_dict(checkpoint['model_state_dict'])
             print('Successfully loaded weights from {}.'.format(load_path))
         # Read in the means and stds from another file, created by 'normalize.py'
         self.means, self.stds = self.get_mean_std()
@@ -101,32 +101,29 @@ class Grasp_Agent():
             else:
                 self.memory = ReplayBuffer(mem_size)
             # Using SGD with parameters described in TossingBot paper
-            self.optimizer = optim.SGD(self.policy_net.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=0.00002)
+            self.optimizer = optim.SGD(self.policy_net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.00002)
             if load_path is not None:
                 self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
                 self.steps_done = checkpoint['step']
                 self.eps_threshold = checkpoint['epsilon']
                 self.DESCRIPTION = '_continue_' + load_path[:-11] + '_at_' + str(self.steps_done)
                 self.WEIGHT_PATH = load_path
-                self.greedy_heights = checkpoint['greedy_heights']
-                self.random_heights = checkpoint['random_heights']
-                self.greedy_heights_successes = checkpoint['greedy_heights_successes']
-                self.random_heights_successes = checkpoint['random_heights_successes']
+                self.greedy_rotations = checkpoint['greedy_rotations']
+                self.greedy_rotations_successes = checkpoint['greedy_rotations_successes']
+                self.random_rotations_successes = checkpoint['random_rotations_successes']
             else:
                 self.steps_done = 0
                 self.eps_threshold = EPS_START
                 date = '_'.join([str(time.localtime()[1]), str(time.localtime()[2]), str(time.localtime()[0]), str(time.localtime()[3]), str(time.localtime()[4])])
-                self.DESCRIPTION = '_'.join([ALGORITHM ,MODEL, 'LR', str(LEARNING_RATE), 'H', 'EPS_START', str(EPS_START), 'EPS_END', str(EPS_END), str(HEIGHT), \
+                self.DESCRIPTION = '_'.join([ALGORITHM ,MODEL, 'LR', str(learning_rate), 'H', 'EPS_START', str(EPS_START), 'EPS_END', str(EPS_END), str(HEIGHT), \
                         'W', str(WIDTH), 'STEPS', str(N_EPISODES*STEPS_PER_EPISODE), 'BUFFER_SIZE', str(MEMORY_SIZE), 'BATCH_SIZE', str(BATCH_SIZE), 'SEED', str(seed)])
                 self.WEIGHT_PATH = self.DESCRIPTION + '_' + date + '_weights.pt'
-                self.greedy_heights = defaultdict(int)
-                self.random_heights = defaultdict(int)
-                self.greedy_heights_successes = defaultdict(int)
-                self.random_heights_successes = defaultdict(int)
+                self.greedy_rotations = defaultdict(int)
+                self.greedy_rotations_successes = defaultdict(int)
+                self.random_rotations_successes = defaultdict(int)
             # Tensorboard setup
             self.writer = SummaryWriter(comment=self.DESCRIPTION)
             self.writer.add_graph(self.policy_net, torch.zeros(1, 4, self.WIDTH, self.HEIGHT).to(device))
-            # self.writer.close()
             self.last_1000_rewards = deque(maxlen=1000)
             self.last_100_loss = deque(maxlen=100)
             self.last_1000_actions = deque(maxlen=1000)
@@ -141,9 +138,9 @@ class Grasp_Agent():
         """
 
         sample = random.random()
-        # self.eps_threshold = EPS_END + (EPS_START - EPS_END) * \
-            # math.exp(-1. * self.steps_done / EPS_DECAY)
-        self.eps_threshold = 0.0
+        self.eps_threshold = EPS_END + (EPS_START - EPS_END) * \
+            math.exp(-1. * self.steps_done / EPS_DECAY)
+        # self.eps_threshold = 1.0
         self.writer.add_scalar('Epsilon', self.eps_threshold, global_step=self.steps_done)
         self.steps_done += 1
         # if self.steps_done < 2*BATCH_SIZE:
@@ -157,9 +154,26 @@ class Grasp_Agent():
                 max_idx = max_idx.view(1)
                 # Do not want to store replay buffer in GPU memory, so put action tensor to cpu.
                 return max_idx.unsqueeze_(0).cpu()
+        # else:
+        #     self.last_action = 'random'
+        #     return torch.tensor([[random.randrange(self.output)]], dtype=torch.long)
+
+        # Little trick for faster training: When sampling a random action, check the depth value
+        # of the selected pixel and resample until you get a pixel corresponding to a point on the table
         else:
             self.last_action = 'random'
-            return torch.tensor([[random.randrange(self.output)]], dtype=torch.long)
+            while True:
+                action = random.randrange(self.output)
+                action_1 = action % self.n_actions_1
+                x = action_1 % self.env.IMAGE_WIDTH
+                y = action_1 // self.env.IMAGE_WIDTH
+                depth = self.env.current_observation['depth'][y][x]
+                coordinates = self.env.controller.pixel_2_world(pixel_x=x, pixel_y=y, depth=depth, height=self.env.IMAGE_HEIGHT, width=self.env.IMAGE_WIDTH)
+                if coordinates[2] >= (self.env.TABLE_HEIGHT - 0.01):
+                    break
+
+            return torch.tensor([[action]], dtype=torch.long)
+
 
 
     def greedy(self, state):
@@ -314,25 +328,23 @@ class Grasp_Agent():
             action: Last action chosen by the current policy.
         """
         
-        height_action = action[1]
-        self.last_1000_actions.append(height_action)
+        rotation_action = action[1]
+        self.last_1000_actions.append(rotation_action)
         if self.last_action == 'greedy':
-            self.greedy_heights[str(height_action)] += 1
+            self.greedy_rotations[str(rotation_action)] += 1
             if reward == 1:
-                self.greedy_heights_successes[str(height_action)] += 1
+                self.greedy_rotations_successes[str(rotation_action)] += 1
         else:
-            self.random_heights[str(height_action)] += 1
             if reward == 1:
-                self.random_heights_successes[str(height_action)] += 1
+                self.random_rotations_successes[str(rotation_action)] += 1
 
         if self.steps_done % 1000 == 0:
-            self.writer.add_histogram('Height action distribution/Last1000', np.array(self.last_1000_actions), global_step=self.steps_done, bins=[i for i in range(self.n_actions_2)])
+            self.writer.add_histogram('Rotation action distribution/Last1000', np.array(self.last_1000_actions), global_step=self.steps_done, bins=[i for i in range(self.n_actions_2)])
 
-        self.writer.add_scalars('Total number of height actions/Greedy', self.greedy_heights, self.steps_done)
-        self.writer.add_scalars('Total number of height actions/Random', self.random_heights, self.steps_done)
+        self.writer.add_scalars('Total number of rotation actions/Greedy', self.greedy_rotations, self.steps_done)
 
-        self.writer.add_scalars('Total number of successful height actions/Greedy', self.greedy_heights_successes, self.steps_done)
-        self.writer.add_scalars('Total number of successful height actions/Random', self.random_heights_successes, self.steps_done)
+        self.writer.add_scalars('Total number of successful rotation actions/Greedy', self.greedy_rotations_successes, self.steps_done)
+        self.writer.add_scalars('Total number of successful rotation actions/Random', self.random_rotations_successes, self.steps_done)
 
         self.last_1000_rewards.append(reward)
 
@@ -352,55 +364,55 @@ class Grasp_Agent():
 
 def main():
 
-    for rand_seed in [440]:
-        LOAD_PATH = 'DQN_RESNET_LR_0.001_H_EPS_START_1.0_EPS_END_0.3_200_W_200_STEPS_20000_BUFFER_SIZE_2000_BATCH_SIZE_12_SEED_333_8_10_2020_0_9_weights.pt'
+    for rand_seed in [81]:
+        for lr in [0.001]:
+            LOAD_PATH = 'DQN_RESNET_LR_0.001_H_EPS_START_1.0_EPS_END_0.3_200_W_200_STEPS_2500_BUFFER_SIZE_2000_BATCH_SIZE_12_SEED_81_8_29_2020_20_1_weights.pt'
 
-        agent = Grasp_Agent(seed=rand_seed, load_path=LOAD_PATH)
-        agent.optimizer.zero_grad()
-        for episode in range(1, N_EPISODES+1):
-            state = agent.env.reset()
-            state = agent.transform_observation(state)
-            print(colored('CURRENT EPSILON: {}'.format(agent.eps_threshold), color='blue', attrs=['bold']))
-            for step in range(1, STEPS_PER_EPISODE+1):
-                print('#################################################################')
-                print(colored('EPISODE {} STEP {}'.format(episode, step), color='white', attrs=['bold']))
-                print('#################################################################')
-                
-                action = agent.epsilon_greedy(state)
-                env_action = agent.transform_action(action)
-                next_state, reward, done, _ = agent.env.step(env_action, action_info=agent.last_action)
-                agent.update_tensorboard(reward, env_action)
-                reward = torch.tensor([[reward]])
-                next_state = agent.transform_observation(next_state)
-                if GAMMA == 0.0:
-                    agent.memory.push(state, action, reward)
-                else:
-                    agent.memory.push(state, action, next_state, reward)
+            agent = Grasp_Agent(seed=rand_seed, load_path=LOAD_PATH, learning_rate=lr)
+            agent.optimizer.zero_grad()
+            for episode in range(1, N_EPISODES+1):
+                state = agent.env.reset()
+                state = agent.transform_observation(state)
+                print(colored('CURRENT EPSILON: {}'.format(agent.eps_threshold), color='blue', attrs=['bold']))
+                for step in range(1, STEPS_PER_EPISODE+1):
+                    print('#################################################################')
+                    print(colored('EPISODE {} STEP {}'.format(episode, step), color='white', attrs=['bold']))
+                    print('#################################################################')
+                    
+                    action = agent.epsilon_greedy(state)
+                    env_action = agent.transform_action(action)
+                    next_state, reward, done, _ = agent.env.step(env_action, action_info=agent.last_action)
+                    agent.update_tensorboard(reward, env_action)
+                    reward = torch.tensor([[reward]])
+                    next_state = agent.transform_observation(next_state)
+                    if GAMMA == 0.0:
+                        agent.memory.push(state, action, reward)
+                    else:
+                        agent.memory.push(state, action, next_state, reward)
 
-                state = next_state
+                    state = next_state
 
-                agent.learn()
-
-
-        if SAVE_WEIGHTS:
-            torch.save({
-            'step': agent.steps_done,
-            'model_state_dict': agent.policy_net.state_dict(),
-            'optimizer_state_dict': agent.optimizer.state_dict(),
-            'epsilon': agent.eps_threshold,
-            'greedy_heights': agent.greedy_heights,
-            'random_heights': agent.random_heights,
-            'greedy_heights_successes': agent.greedy_heights_successes,
-            'random_heights_successes': agent.random_heights_successes
-            }, agent.WEIGHT_PATH)
-
-            # torch.save(agent.policy_net.state_dict(), WEIGHT_PATH)
-            print('Saved checkpoint to {}.'.format(agent.WEIGHT_PATH))
+                    agent.learn()
 
 
-        print(f'Finished training (rand_seed = {rand_seed}).')
-        agent.writer.close()
-        agent.env.close()
+            if SAVE_WEIGHTS:
+                torch.save({
+                'step': agent.steps_done,
+                'model_state_dict': agent.policy_net.state_dict(),
+                'optimizer_state_dict': agent.optimizer.state_dict(),
+                'epsilon': agent.eps_threshold,
+                'greedy_rotations': agent.greedy_rotations,
+                'greedy_rotations_successes': agent.greedy_rotations_successes,
+                'random_rotations_successes': agent.random_rotations_successes
+                }, agent.WEIGHT_PATH)
+
+                # torch.save(agent.policy_net.state_dict(), WEIGHT_PATH)
+                print('Saved checkpoint to {}.'.format(agent.WEIGHT_PATH))
+
+
+            print(f'Finished training (rand_seed = {rand_seed}).')
+            agent.writer.close()
+            agent.env.close()
 
 if __name__ == '__main__':
     main()

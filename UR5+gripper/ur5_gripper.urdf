@@ -92,7 +92,7 @@
     <origin rpy="0.0 1.570796325 0.0" xyz="0.0 0.13585 0.0"/>
     <axis xyz="0 1 0"/>
     <limit effort="150.0" lower="-3.14159265" upper="-0.9" velocity="3.15"/>
-    <!-- <limit effort="150.0" lower="-3.14159265" upper="0.0" velocity="3.15"/> -->
+    <!-- <limit effort="150.0" lower="-3.14159265" upper="-0.8" velocity="3.15"/> -->
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
   <link name="upper_arm_link">

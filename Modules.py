@@ -226,7 +226,7 @@ class Grasping_Module(nn.Module):
 
 
 class Grasping_Module_multidiscrete(nn.Module):
-	def __init__(self, output_activation='Sigmoid', act_dim_2=10):
+	def __init__(self, output_activation='Sigmoid', act_dim_2=6):
 		super(Grasping_Module_multidiscrete, self).__init__()
 		self.RB1 = BasicBlock(512, 256)
 		self.RB2 = BasicBlock(256, 128)
@@ -289,8 +289,8 @@ def RESNET():
 def POLICY_RESNET():
 	return nn.Sequential(Perception_Module(), Grasping_Module(output_activation=None))
 
-def MULTIDISCRETE_RESNET():
-	return nn.Sequential(Perception_Module(), Grasping_Module_multidiscrete())
+def MULTIDISCRETE_RESNET(number_actions_dim_2):
+	return nn.Sequential(Perception_Module(), Grasping_Module_multidiscrete(act_dim_2=number_actions_dim_2))
 
 
 
@@ -309,8 +309,8 @@ def count_parameters(model):
 if __name__ == '__main__':
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-	# resnet = MULTIDISCRETE_RESNET()
-	resnet = RESNET()
+	resnet = MULTIDISCRETE_RESNET(6)
+	# resnet = RESNET()
 
 	test = torch.Tensor(3,4,200,200)
 

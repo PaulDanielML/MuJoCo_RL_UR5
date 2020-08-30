@@ -41,6 +41,8 @@ def debug(func):
 					print(v)
 		elif isinstance(value, np.ndarray):
 			print(f'Shape: {value.shape}')
+			if value.size < 100:
+				print(value)
 		else:
 			print(f'{func.__name__} returned {value!r}.')
 		print('#################################')
