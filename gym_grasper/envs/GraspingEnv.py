@@ -134,6 +134,10 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
 
     def set_grasp_position(self, position):
+        """
+        Legacy method, not used in the current setup. May be used to directly set the joint values to a desired position.
+        """
+        
         joint_angles = self.controller.ik(position)
         qpos = self.data.qpos
         idx = self.controller.actuated_joint_ids[self.controller.groups['Arm']]
@@ -190,6 +194,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             result_rotate = 'Skipped'
             steps_rotate = 0
             result2 = 'Skipped'
+            coordinates_2 = None
             steps2 = 0
             result_grasp = False
 
@@ -269,7 +274,7 @@ class GraspEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         print('Results: ')
         print('Move to pre grasp position: '.ljust(40, ' '), result_pre, ',', steps1, 'steps')
         print('Rotate gripper: '.ljust(40, ' '), result_rotate, ',', steps_rotate, 'steps')
-        print('Move to grasping position: '.ljust(40, ' '), result2, ',', steps2, 'steps')
+        print(f'Move to grasping position (z={np.round(coordinates_2[2], decimals=4) if isinstance(coordinates_2, np.ndarray) else 0}):'.ljust(40, ' '), result2, ',', steps2, 'steps')
         print('Grasped anything?: '.ljust(40, ' '), result_grasp)
         print('Move to center: '.ljust(40, ' '), result3, ',', steps3, 'steps')
         print('Move to drop position: '.ljust(40, ' '), result4, ',', steps4, 'steps')

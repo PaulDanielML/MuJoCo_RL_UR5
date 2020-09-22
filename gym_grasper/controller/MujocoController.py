@@ -148,6 +148,7 @@ class MJ_Controller(object):
         self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 0.1*d_scale, setpoint=-1.57, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 2 Joint
         self.controller_list.append(PID(5*p_scale, 0.0*i_scale, 0.1*d_scale, setpoint=0.0, output_limits=(-1, 1), sample_time=sample_time)) # Wrist 3 Joint
         self.controller_list.append(PID(2.5*p_scale, i_gripper, 0.00*d_scale, setpoint=0.0, output_limits=(-1, 1), sample_time=sample_time)) # Gripper Joint
+        # self.controller_list.append(PID(10.5*p_scale, 0.2, 0.1*d_scale, setpoint=0.0, output_limits=(-1, 1), sample_time=sample_time)) # Gripper Joint
         # self.controller_list.append(PID(2*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.2, output_limits=(-0.5, 0.8), sample_time=sample_time)) # Finger 2 Joint 1
         # self.controller_list.append(PID(1*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=0.0, output_limits=(-0.5, 0.8), sample_time=sample_time)) # Middle Finger Joint 1
         # self.controller_list.append(PID(1*p_scale, 0.1*i_scale, 0.05*d_scale, setpoint=-0.1, output_limits=(-0.8, 0.8), sample_time=sample_time)) # Gripperpalm Finger 1 Joint
@@ -628,7 +629,6 @@ class MJ_Controller(object):
         pixel = hom_pixel[:2] / hom_pixel[2]
 
         return np.round(pixel[0]).astype(int), np.round(pixel[1]).astype(int)
-
 
     def pixel_2_world(self, pixel_x, pixel_y, depth, width=200, height=200, camera='top_down'):
         """
