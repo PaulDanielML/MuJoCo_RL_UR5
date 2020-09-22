@@ -1,6 +1,6 @@
 # Deep Reinforcement Learning for robotic pick and place applications using purely visual observations 
 
-## Work in progress! Current training setup iteration: IT5 <br> Try finding an agent that performs well on IT5 (many objects, large multi-discrete action space)
+## Work in progress! Current training setup iteration: IT5 <br> Current focus: Using offline RL for making better use of the simulated data and for hyperparameter tuning
 
 **Author:** Paul Daniel (paudan22@gmail.com)
 
@@ -93,6 +93,9 @@ The class *MJ_Controller* offers high and low level methods for controlling the 
 ![gif1](/media/gif_1.gif "Simple Grasp and Toss")
 
 ## **Updates**
+
+**Trials for Offline RL:** The folder *Offline RL* contains scripts for generating and learning from a dataset of (state, action, reward)-transitions. *generate_data.py* can be used to generate as many files as required, each file containing 12 transitions.
+
 **New gripper model available:** A new, less bulky, 2-finger gripper was implemented in the model in training setup iteration 3. 
 
 ![new_gripper](/media/new_gripper.png "new gripper")

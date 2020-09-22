@@ -13,4 +13,5 @@ runs/
 demonstration.py
 Grasping_Agent_REINFORCE.py
 UR5gripper_2_finger_test.xml
+Offline RL/Data/
 # decorators.py

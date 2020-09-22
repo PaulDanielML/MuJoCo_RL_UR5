@@ -24,69 +24,70 @@ def get_mean_std():
 
 
 class ReplayBuffer(object):
-	def __init__(self, size, simple=False):
-		self.size = size
-		self.memory = []
-		self.position = 0
-		self.simple = simple
-		random.seed(20)
+    def __init__(self, size, simple=False):
+        self.size = size
+        self.memory = []
+        self.position = 0
+        self.simple = simple
+        random.seed(20)
+
+    def push(self, *args):
+        if len(self.memory) < self.size:
+            self.memory.append(None)
+        if self.simple:
+        	self.memory[self.position] = simple_Transition(*args)
+        else:
+            self.memory[self.position] = Transition(*args)
+        # If replay buffer is full, we start overwriting the first entries
+        self.position = (self.position + 1) % self.size
 
 
-	def push(self, *args):
-		if len(self.memory) < self.size:
-			self.memory.append(None)
-		if self.simple:
-			self.memory[self.position] = simple_Transition(*args)
-		else:
-			self.memory[self.position] = Transition(*args)
-		# If replay buffer is full, we start overwriting the first entries
-		self.position = (self.position + 1) % self.size
+    def sample(self, batch_size):
+        rand_samples = random.sample(self.memory, batch_size-1)
+        rand_samples.append(self.memory[self.position-1])
+        return rand_samples
 
 
-	def sample(self, batch_size):
-		return random.sample(self.memory, batch_size)
+    def get(self, index):
+        return self.memory[index]
 
 
-	def get(self, index):
-		return self.memory[index]
-
-
-	def __len__(self):
-		return len(self.memory)
+    def __len__(self):
+        return len(self.memory)
 
 
 class CONV3_FC1(nn.Module):
-	def __init__(self, h, w, outputs):
-		super(CONV3_FC1, self).__init__()
-		self.conv1 = nn.Conv2d(3, 16, kernel_size=5, stride=3)
-		self.bn1 = nn.BatchNorm2d(16)
-		self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=3)
-		self.bn2 = nn.BatchNorm2d(32)
-		# self.conv3 = nn.Conv2d(32, 64, kernel_size=5, stride=3)
-		self.conv3 = nn.Conv2d(32, 32, kernel_size=5, stride=3)
-		# self.bn3 = nn.BatchNorm2d(64)
-		self.bn3 = nn.BatchNorm2d(32)
+    def __init__(self, h, w, outputs):
+        super(CONV3_FC1, self).__init__()
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=5, stride=3)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=3)
+        self.bn2 = nn.BatchNorm2d(32)
+        # self.conv3 = nn.Conv2d(32, 64, kernel_size=5, stride=3)
+        self.conv3 = nn.Conv2d(32, 32, kernel_size=5, stride=3)
+        # self.bn3 = nn.BatchNorm2d(64)
+        self.bn3 = nn.BatchNorm2d(32)
 
-		def conv2d_size_out(size, kernel_size=5, stride=3):
-			return (size - (kernel_size - 1) - 1) // stride + 1
-		convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
-		convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
-		lin_input_size = convw * convh * 32
-		fc1_output_size = int(np.round(outputs/4))
-		self.fc1 = nn.Linear(lin_input_size, outputs)
+        def conv2d_size_out(size, kernel_size=5, stride=3):
+        	return (size - (kernel_size - 1) - 1) // stride + 1
+        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
+        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
+        lin_input_size = convw * convh * 32
+        fc1_output_size = int(np.round(outputs/4))
+        self.fc1 = nn.Linear(lin_input_size, outputs)
 
 
-	def forward(self, x):
-		# print(x.size())
+    def forward(self, x):
+        # print(x.size())
 
-		x = F.relu(self.bn1(self.conv1(x)))
-		# print(x.size())
-		x = F.relu(self.bn2(self.conv2(x)))
-		# print(x.size())
+        x = F.relu(self.bn1(self.conv1(x)))
+        # print(x.size())
+        x = F.relu(self.bn2(self.conv2(x)))
+        # print(x.size())
 
-		x = F.relu(self.bn3(self.conv3(x)))
-		# print(x.size())
-		return self.fc1(x.view(x.size(0), -1))
+        x = F.relu(self.bn3(self.conv3(x)))
+        # print(x.size())
+        return self.fc1(x.view(x.size(0), -1))
 
 
 class BasicBlock(nn.Module):
@@ -125,7 +126,7 @@ class BasicBlock(nn.Module):
             # identity = self.downsample(x)
 
         if self.conv3:
-        	identity = self.conv3(identity)
+            identity = self.conv3(identity)
 
         out += identity
         out = self.relu(out)
@@ -142,6 +143,7 @@ def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
 class Perception_Module(nn.Module):
 	def __init__(self):
 		super(Perception_Module, self).__init__()
+		# self.C1 = conv3x3(1, 64)
 		self.C1 = conv3x3(4, 64)
 		self.MP1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 		self.RB1 = BasicBlock(64, 128)
@@ -312,7 +314,7 @@ if __name__ == '__main__':
 	resnet = MULTIDISCRETE_RESNET(6)
 	# resnet = RESNET()
 
-	test = torch.Tensor(3,4,200,200)
+	test = torch.Tensor(3,1,200,200)
 
 	output = resnet(test)
 	count_parameters(resnet)

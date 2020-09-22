@@ -12,6 +12,7 @@ from termcolor import colored
 import numpy as np
 import pickle
 import random
+import copy
 import math
 from collections import deque, defaultdict
 import time
@@ -20,20 +21,22 @@ from Modules import MULTIDISCRETE_RESNET
 
 HEIGHT = 200
 WIDTH = 200
-N_EPISODES = 80
+N_EPISODES = 1000
 STEPS_PER_EPISODE = 50
 MEMORY_SIZE = 2000
-MAX_POSSIBLE_SAMPLES = 12                                               # Number of transitions that fits on GPU memory for one backward-call
+MAX_POSSIBLE_SAMPLES = 12                                               # Number of transitions that fits on GPU memory for one backward-call (12 for RGB-D)
 NUMBER_ACCUMULATIONS_BEFORE_UPDATE = 1                                  # How often to accumulate gradients before updating
 BATCH_SIZE = MAX_POSSIBLE_SAMPLES*NUMBER_ACCUMULATIONS_BEFORE_UPDATE    # Effective batch size
 GAMMA = 0.0
 LEARNING_RATE = 0.001
+EPS_STEADY = 0.0
 EPS_START = 1.0
-EPS_END = 0.3
+EPS_END = 0.2
 EPS_DECAY = 8000
 SAVE_WEIGHTS = True
 MODEL = 'RESNET'
 ALGORITHM = 'DQN'
+OPTIMIZER = 'ADAM'
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -44,7 +47,7 @@ class Grasp_Agent():
     Implements some basic methods for normalization, action selection, observation transformation and learning. 
     """
 
-    def __init__(self, height=HEIGHT, width=WIDTH, learning_rate=LEARNING_RATE, mem_size=MEMORY_SIZE, eps_start=EPS_START, eps_end=EPS_END, eps_decay=EPS_DECAY, load_path=None, train=True, seed=20):
+    def __init__(self, height=HEIGHT, width=WIDTH, learning_rate=LEARNING_RATE, mem_size=MEMORY_SIZE, eps_start=EPS_START, eps_end=EPS_END, eps_decay=EPS_DECAY, depth_only=False, load_path=None, train=True, seed=20, optimizer=OPTIMIZER):
         """
         Args:
             height: Observation height (in pixels).
@@ -61,6 +64,7 @@ class Grasp_Agent():
         random.seed(seed)
         self.WIDTH = width
         self.HEIGHT = height
+        self.depth_only = depth_only
         if train:
             self.env = gym.make('gym_grasper:Grasper-v0', image_height=HEIGHT, image_width=WIDTH, render=False)
             # self.env = gym.make('gym_grasper:Grasper-v0', image_height=HEIGHT, image_width=WIDTH)
@@ -82,15 +86,15 @@ class Grasp_Agent():
             if GAMMA != 0.0:
                 self.target_net.load_state_dict(checkpoint['model_state_dict'])
             print('Successfully loaded weights from {}.'.format(load_path))
-        # Read in the means and stds from another file, created by 'normalize.py'
-        self.means, self.stds = self.get_mean_std()
         # Set up some transforms
-        self.normal_rgb = T.Compose([T.ToPILImage(), T.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5), T.ToTensor(), \
-                            T.Lambda(lambda x : x + 0.05*torch.randn_like(x))])
+        self.normal_rgb = T.Compose([T.ToPILImage(), T.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5), T.ToTensor()])
+        # self.normal_rgb = T.Compose([T.ToPILImage(), T.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5), T.ToTensor(), \
+                            # T.Lambda(lambda x : x + 0.01*torch.randn_like(x))])
         self.normal_rgb_no_jitter_no_noise = T.Compose([T.ToTensor()])
-        self.standardize_rgb = T.Compose([T.ToTensor(), T.Normalize(self.means[0:3], self.stds[0:3])])
-        self.normal_depth =T.Compose([T.Lambda(lambda x : x + 0.05*torch.randn_like(x))])
-        self.standardize_depth =T.Compose([T.Normalize(self.means[3], self.stds[3]), T.Lambda(lambda x : x + 0.05*torch.randn_like(x))])
+        self.normal_depth =T.Compose([T.Lambda(lambda x : x + 0.01*torch.randn_like(x))])
+        # self.normal_depth =T.Compose([T.Lambda(lambda x : x + 0.001*torch.randn_like(x))])
+        self.depth_threshold = np.round(self.env.model.cam_pos0[self.env.model.camera_name2id('top_down')][2]  \
+                            - self.env.TABLE_HEIGHT + 0.01, decimals=3)
         self.last_action = None
         if train:
             # Set up replay buffer
@@ -100,22 +104,25 @@ class Grasp_Agent():
                 self.memory = ReplayBuffer(mem_size, simple=True)
             else:
                 self.memory = ReplayBuffer(mem_size)
-            # Using SGD with parameters described in TossingBot paper
-            self.optimizer = optim.SGD(self.policy_net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.00002)
+            if optimizer == 'SGD':
+                # Using SGD with parameters described in TossingBot paper
+                self.optimizer = optim.SGD(self.policy_net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.00002)
+            elif optimizer == 'ADAM':
+                self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate, weight_decay=0.00002)
             if load_path is not None:
                 self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-                self.steps_done = checkpoint['step']
-                self.eps_threshold = checkpoint['epsilon']
+                self.steps_done = checkpoint['step'] if 'step' in checkpoint.keys() else 0
+                self.eps_threshold = checkpoint['epsilon'] if 'epsilon' in checkpoint.keys() else EPS_STEADY
                 self.DESCRIPTION = '_continue_' + load_path[:-11] + '_at_' + str(self.steps_done)
                 self.WEIGHT_PATH = load_path
-                self.greedy_rotations = checkpoint['greedy_rotations']
-                self.greedy_rotations_successes = checkpoint['greedy_rotations_successes']
-                self.random_rotations_successes = checkpoint['random_rotations_successes']
+                self.greedy_rotations = checkpoint['greedy_rotations'] if 'greedy_rotations' in checkpoint.keys() else defaultdict(int)
+                self.greedy_rotations_successes = checkpoint['greedy_rotations_successes'] if 'greedy_rotations_successes' in checkpoint.keys() else defaultdict(int)
+                self.random_rotations_successes = checkpoint['random_rotations_successes'] if 'random_rotations_successes' in checkpoint.keys() else defaultdict(int)
             else:
                 self.steps_done = 0
                 self.eps_threshold = EPS_START
                 date = '_'.join([str(time.localtime()[1]), str(time.localtime()[2]), str(time.localtime()[0]), str(time.localtime()[3]), str(time.localtime()[4])])
-                self.DESCRIPTION = '_'.join([ALGORITHM ,MODEL, 'LR', str(learning_rate), 'H', 'EPS_START', str(EPS_START), 'EPS_END', str(EPS_END), str(HEIGHT), \
+                self.DESCRIPTION = '_'.join([ALGORITHM ,MODEL, 'LR', str(learning_rate), 'OPTIM', optimizer, 'H', str(HEIGHT), \
                         'W', str(WIDTH), 'STEPS', str(N_EPISODES*STEPS_PER_EPISODE), 'BUFFER_SIZE', str(MEMORY_SIZE), 'BATCH_SIZE', str(BATCH_SIZE), 'SEED', str(seed)])
                 self.WEIGHT_PATH = self.DESCRIPTION + '_' + date + '_weights.pt'
                 self.greedy_rotations = defaultdict(int)
@@ -123,7 +130,10 @@ class Grasp_Agent():
                 self.random_rotations_successes = defaultdict(int)
             # Tensorboard setup
             self.writer = SummaryWriter(comment=self.DESCRIPTION)
-            self.writer.add_graph(self.policy_net, torch.zeros(1, 4, self.WIDTH, self.HEIGHT).to(device))
+            if not self.depth_only:
+                self.writer.add_graph(self.policy_net, torch.zeros(1, 4, self.WIDTH, self.HEIGHT).to(device))
+            else:
+                self.writer.add_graph(self.policy_net, torch.zeros(1, 1, self.WIDTH, self.HEIGHT).to(device))
             self.last_1000_rewards = deque(maxlen=1000)
             self.last_100_loss = deque(maxlen=100)
             self.last_1000_actions = deque(maxlen=1000)
@@ -140,7 +150,7 @@ class Grasp_Agent():
         sample = random.random()
         self.eps_threshold = EPS_END + (EPS_START - EPS_END) * \
             math.exp(-1. * self.steps_done / EPS_DECAY)
-        # self.eps_threshold = 1.0
+        # self.eps_threshold = EPS_STEADY
         self.writer.add_scalar('Epsilon', self.eps_threshold, global_step=self.steps_done)
         self.steps_done += 1
         # if self.steps_done < 2*BATCH_SIZE:
@@ -204,10 +214,15 @@ class Grasp_Agent():
             observation: Observation to be transformed.
         """
 
-        depth = observation['depth']
+        depth = copy.deepcopy(observation['depth'])      
+        depth[np.where(depth > self.depth_threshold)] = self.depth_threshold
 
         if normalize:
-            rgb = observation['rgb']
+            if not self.depth_only:
+                rgb = copy.deepcopy(observation['rgb'])
+
+            depth += np.random.normal(loc=0, scale=0.001, size=depth.shape)
+            depth *= -1
             depth_min = np.min(depth)
             depth_max = np.max(depth)
             depth = (depth - depth_min) / (depth_max - depth_min)
@@ -218,25 +233,36 @@ class Grasp_Agent():
         depth = np.expand_dims(depth, 0)
         # Apply rgb normalization transform, this rearanges dimensions, transforms into float tensor,
         # scales values to range [0,1]
-        if normalize and jitter_and_noise:
-            rgb_tensor = self.normal_rgb(rgb).float()
-        if normalize and not jitter_and_noise:
-            rgb_tensor = self.normal_rgb_no_jitter_no_noise(rgb).float()
-        if not normalize:
-            rgb_tensor = self.standardize_rgb(rgb).float()
+        if not self.depth_only:
+            if normalize and jitter_and_noise:
+                rgb_tensor = self.normal_rgb(rgb).float()
+            if normalize and not jitter_and_noise:
+                rgb_tensor = self.normal_rgb_no_jitter_no_noise(rgb).float()
+            if not normalize:
+                # Read in the means and stds from another file, created by 'normalize.py'
+                self.means, self.stds = self.get_mean_std()
+                self.standardize_rgb = T.Compose([T.ToTensor(), T.Normalize(self.means[0:3], self.stds[0:3])])
+                rgb_tensor = self.standardize_rgb(rgb).float()
 
         depth_tensor = torch.tensor(depth).float()
         # Depth values need to be normalized separately, as they are not int values. Therefore, T.ToTensor() does not work for them.
-        if normalize:
-            depth_tensor = self.normal_depth(depth_tensor)
-        else:
+        # if normalize:
+            # depth_tensor = self.normal_depth(depth_tensor)
+        if not normalize:
+            self.standardize_depth =T.Compose([T.Normalize(self.means[3], self.stds[3]), T.Lambda(lambda x : x + 0.001*torch.randn_like(x))])
             depth_tensor = self.standardize_depth(depth_tensor)
         
-        obs_tensor = torch.cat((rgb_tensor, depth_tensor), dim=0)
+        if not self.depth_only:
+            obs_tensor = torch.cat((rgb_tensor, depth_tensor), dim=0)
+        else:
+            obs_tensor = depth_tensor.detach().clone()
 
         # Add batch dimension.
         obs_tensor.unsqueeze_(0)
-        del rgb, depth, rgb_tensor, depth_tensor
+        if not self.depth_only:
+            del rgb, depth, rgb_tensor, depth_tensor
+        else:
+            del depth, depth_tensor
 
         return obs_tensor
 
@@ -341,34 +367,37 @@ class Grasp_Agent():
         if self.steps_done % 1000 == 0:
             self.writer.add_histogram('Rotation action distribution/Last1000', np.array(self.last_1000_actions), global_step=self.steps_done, bins=[i for i in range(self.n_actions_2)])
 
-        self.writer.add_scalars('Total number of rotation actions/Greedy', self.greedy_rotations, self.steps_done)
-
-        self.writer.add_scalars('Total number of successful rotation actions/Greedy', self.greedy_rotations_successes, self.steps_done)
-        self.writer.add_scalars('Total number of successful rotation actions/Random', self.random_rotations_successes, self.steps_done)
+        if self.steps_done % 10 == 0:
+            self.writer.add_scalars('Total number of rotation actions/Greedy', self.greedy_rotations, self.steps_done)
+            self.writer.add_scalars('Total number of successful rotation actions/Greedy', self.greedy_rotations_successes, self.steps_done)
+            self.writer.add_scalars('Total number of successful rotation actions/Random', self.random_rotations_successes, self.steps_done)
 
         self.last_1000_rewards.append(reward)
 
         if len(self.last_1000_rewards) > 99: 
-            last_100 = np.array([self.last_1000_rewards[i] for i in range(-100,0)])
-            mean_reward_100 = np.mean(last_100)
-            self.writer.add_scalar('Mean reward/Last100', mean_reward_100, global_step=self.steps_done)
+            if self.steps_done % 10 == 0:
+                last_100 = np.array([self.last_1000_rewards[i] for i in range(-100,0)])
+                mean_reward_100 = np.mean(last_100)
+                self.writer.add_scalar('Mean reward/Last100', mean_reward_100, global_step=self.steps_done)
             # grasps_in_last_100 = np.count_nonzero(last_100 == 1)
             # self.writer.add_scalar('Number of succ. grasps in last 100 steps', grasps_in_last_100, global_step=self.steps_done)
         if len(self.last_1000_rewards) > 999:
-            mean_reward_1000 = np.mean(self.last_1000_rewards)
-            self.writer.add_scalar('Mean reward/Last1000', mean_reward_1000, global_step=self.steps_done)
+            if self.steps_done % 10 == 0:
+                mean_reward_1000 = np.mean(self.last_1000_rewards)
+                self.writer.add_scalar('Mean reward/Last1000', mean_reward_1000, global_step=self.steps_done)
 
         if len(self.last_100_loss) > 99:
-            self.writer.add_scalar('Mean loss/Last100', np.mean(self.last_100_loss), global_step=self.steps_done)
+            if self.steps_done % 10 == 0:
+                self.writer.add_scalar('Mean loss/Last100', np.mean(self.last_100_loss), global_step=self.steps_done)
 
 
 def main():
 
-    for rand_seed in [81]:
-        for lr in [0.001]:
-            LOAD_PATH = 'DQN_RESNET_LR_0.001_H_EPS_START_1.0_EPS_END_0.3_200_W_200_STEPS_2500_BUFFER_SIZE_2000_BATCH_SIZE_12_SEED_81_8_29_2020_20_1_weights.pt'
+    for rand_seed in [999]:
+        for lr in [0.0005]:
+            LOAD_PATH = 'DQN_RESNET_LR_0.001_OPTIM_ADAM_H_200_W_200_STEPS_35000_BUFFER_SIZE_2000_BATCH_SIZE_12_SEED_81_9_7_2020_9_52_weights.pt'
 
-            agent = Grasp_Agent(seed=rand_seed, load_path=LOAD_PATH, learning_rate=lr)
+            agent = Grasp_Agent(seed=rand_seed, load_path=None, learning_rate=lr, depth_only=False)
             agent.optimizer.zero_grad()
             for episode in range(1, N_EPISODES+1):
                 state = agent.env.reset()
@@ -378,7 +407,6 @@ def main():
                     print('#################################################################')
                     print(colored('EPISODE {} STEP {}'.format(episode, step), color='white', attrs=['bold']))
                     print('#################################################################')
-                    
                     action = agent.epsilon_greedy(state)
                     env_action = agent.transform_action(action)
                     next_state, reward, done, _ = agent.env.step(env_action, action_info=agent.last_action)
