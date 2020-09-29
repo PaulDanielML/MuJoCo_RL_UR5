@@ -314,7 +314,7 @@ if __name__ == '__main__':
 	resnet = MULTIDISCRETE_RESNET(6)
 	# resnet = RESNET()
 
-	test = torch.Tensor(3,1,200,200)
+	test = torch.Tensor(3,4,200,200)
 
 	output = resnet(test)
 	count_parameters(resnet)
