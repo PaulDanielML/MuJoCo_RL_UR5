@@ -1,7 +1,6 @@
+## Accompanying repository of Master's thesis at TU Berlin / Aalborg University. No longer under active development. Developed in my earlier Python days, please forgive the unformatted spaghetti code. 
+
 # Deep Reinforcement Learning for robotic pick and place applications using purely visual observations 
-
-## Work in progress! Current training setup iteration: IT5 <br> Current focus: Using offline RL for making better use of the simulated data and for hyperparameter tuning
-
 **Author:** Paul Daniel (paudan22@gmail.com)
 
 ### Traits of this environment: Very large and multi-discrete actionspace, very high sample-cost, visual observations, binary reward.
